@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>과학 실험실</title>
+<link rel="icon" href="favicon.ico" sizes="any">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&amp;family=Noto+Sans+KR:wght@400;500;700;800&amp;family=Space+Grotesk:wght@500;700&amp;display=swap" rel="stylesheet">
@@ -225,6 +226,58 @@
     flex-wrap: wrap;
     gap: 14px;
     margin-top: 28px;
+  }
+
+  .hero__qr-card {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    margin-top: 22px;
+    padding: 18px;
+    border-radius: 24px;
+    border: 1.5px solid rgba(19, 34, 56, 0.1);
+    background:
+      linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(245, 251, 255, 0.92));
+    box-shadow: var(--shadow-soft);
+  }
+
+  .hero__qr-card img {
+    width: 128px;
+    height: 128px;
+    flex: none;
+    padding: 8px;
+    border-radius: 22px;
+    border: 1px solid rgba(19, 34, 56, 0.12);
+    background: #fff;
+  }
+
+  .hero__qr-copy strong {
+    display: block;
+    font-size: 18px;
+  }
+
+  .hero__qr-copy p {
+    margin: 8px 0 0;
+    color: var(--ink-soft);
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  .hero__qr-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 12px;
+    min-height: 42px;
+    padding: 0 14px;
+    border-radius: 999px;
+    background: var(--ink);
+    color: #fff;
+    text-decoration: none;
+    font-weight: 800;
+    font-size: 13px;
   }
 
   .button {
@@ -730,6 +783,11 @@
       flex-direction: column;
     }
 
+    .hero__qr-card {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
     .button {
       width: 100%;
     }
@@ -789,6 +847,7 @@
       <h1 class="hero__title">바로 시작하는<br><span>과학 미션</span></h1>
       <p class="hero__lead">최신 lesson부터 바로 시작할 수 있습니다.</p>
       <div class="hero__actions" id="hero-actions"></div>
+      <div id="hero-qr"></div>
     </div>
 
     <div class="hero__stage" id="spotlight"></div>
@@ -875,6 +934,30 @@
 
     container.appendChild(primary);
     container.appendChild(secondary);
+  }
+
+  function renderHeroQr() {
+    const container = document.getElementById('hero-qr');
+    container.textContent = '';
+
+    const latestLesson = getLatestLesson();
+    if (!latestLesson) return;
+
+    const lessonUrl = new URL(latestLesson.href, window.location.href).href;
+    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(lessonUrl)}&size=256x256&ecc=M`;
+
+    const card = document.createElement('div');
+    card.className = 'hero__qr-card';
+    card.innerHTML = `
+      <img src="${qrUrl}" alt="${latestLesson.title} QR 코드" width="128" height="128" loading="eager" decoding="async">
+      <div class="hero__qr-copy">
+        <strong>최신 lesson QR</strong>
+        <p>휴대폰으로 바로 스캔해서 ${latestLesson.title}으로 들어갈 수 있습니다.</p>
+        <a class="hero__qr-link" href="${latestLesson.href}">lesson 바로 열기</a>
+      </div>
+    `;
+
+    container.appendChild(card);
   }
 
   function renderSpotlight() {
@@ -989,6 +1072,7 @@
   }
 
   createActions();
+  renderHeroQr();
   renderSpotlight();
   renderLessons();
 </script>

@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>발열반응과 흡열반응 마스터</title>
+<link rel="icon" href="favicon.ico" sizes="any">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&amp;family=Noto+Sans+KR:wght@400;500;700;800&amp;family=Space+Grotesk:wght@500;700&amp;display=swap" rel="stylesheet">
@@ -126,6 +127,7 @@
   }
 
   .lesson-card {
+    position: relative;
     border: 1.5px solid var(--line);
     border-radius: 34px;
     background: rgba(255, 255, 255, 0.78);
@@ -134,13 +136,45 @@
     overflow: hidden;
   }
 
+  .lesson-card[data-theme='neutral'] {
+    --theme-warm-opacity: 0.18;
+    --theme-cool-opacity: 0.14;
+    --theme-warm-particles: 0.18;
+    --theme-cool-particles: 0.18;
+  }
+
+  .lesson-card[data-theme='exothermic'] {
+    --theme-warm-opacity: 0.82;
+    --theme-cool-opacity: 0.04;
+    --theme-warm-particles: 0.92;
+    --theme-cool-particles: 0.08;
+  }
+
+  .lesson-card[data-theme='endothermic'] {
+    --theme-warm-opacity: 0.06;
+    --theme-cool-opacity: 0.84;
+    --theme-warm-particles: 0.08;
+    --theme-cool-particles: 0.95;
+  }
+
+  .lesson-card.is-correct {
+    animation: correctPulse 0.75s ease;
+  }
+
+  .lesson-card.is-wrong {
+    animation: wrongShake 0.65s ease;
+  }
+
   .lesson-header {
+    position: relative;
+    z-index: 1;
     padding: 28px 24px 24px;
     text-align: center;
     color: #fff;
     background:
       radial-gradient(circle at top left, rgba(255, 213, 77, 0.35), transparent 32%),
       linear-gradient(135deg, #2f7df4, #1d63cc);
+    transition: background 0.35s ease;
   }
 
   .lesson-header__eyebrow {
@@ -181,7 +215,361 @@
   }
 
   .lesson-content {
+    position: relative;
+    z-index: 1;
     padding: 32px;
+  }
+
+  .theme-stage {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    overflow: hidden;
+  }
+
+  .theme-glow {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(10px);
+    transition: opacity 0.35s ease, transform 0.35s ease;
+  }
+
+  .theme-glow--warm {
+    right: -40px;
+    top: 120px;
+    width: 280px;
+    height: 280px;
+    background: radial-gradient(circle, rgba(255, 138, 82, 0.46), rgba(255, 213, 77, 0.18) 52%, transparent 72%);
+    opacity: var(--theme-warm-opacity, 0.18);
+    transform: scale(0.9);
+  }
+
+  .theme-glow--cool {
+    left: -70px;
+    top: 170px;
+    width: 320px;
+    height: 320px;
+    background: radial-gradient(circle, rgba(142, 232, 255, 0.4), rgba(47, 125, 244, 0.16) 52%, transparent 74%);
+    opacity: var(--theme-cool-opacity, 0.14);
+    transform: scale(0.88);
+  }
+
+  .lesson-card[data-theme='exothermic'] .theme-glow--warm,
+  .lesson-card[data-theme='endothermic'] .theme-glow--cool {
+    transform: scale(1.04);
+  }
+
+  .theme-particles {
+    position: absolute;
+    inset: 0;
+    transition: opacity 0.35s ease;
+  }
+
+  .theme-particles--warm {
+    opacity: var(--theme-warm-particles, 0.18);
+  }
+
+  .theme-particles--cool {
+    opacity: var(--theme-cool-particles, 0.18);
+  }
+
+  .theme-particles span {
+    position: absolute;
+    display: block;
+    pointer-events: none;
+  }
+
+  .theme-particles--warm span {
+    width: 16px;
+    height: 16px;
+    border-radius: 999px;
+    background: radial-gradient(circle at 35% 35%, #fff2a8 0%, #ffb067 42%, rgba(255, 91, 46, 0.15) 100%);
+    box-shadow: 0 0 18px rgba(255, 138, 82, 0.45);
+    animation: emberRise var(--dur, 6s) ease-in-out infinite;
+    animation-delay: var(--delay, 0s);
+  }
+
+  .theme-particles--cool span {
+    width: 18px;
+    height: 18px;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(152, 234, 255, 0.4));
+    box-shadow: 0 0 18px rgba(117, 217, 255, 0.28);
+    transform: rotate(45deg);
+    animation: frostDrift var(--dur, 7s) ease-in-out infinite;
+    animation-delay: var(--delay, 0s);
+  }
+
+  .theme-particles span:nth-child(1) { left: 9%; top: 78%; --dur: 6.8s; --delay: -0.4s; }
+  .theme-particles span:nth-child(2) { left: 22%; top: 66%; --dur: 5.4s; --delay: -1.2s; }
+  .theme-particles span:nth-child(3) { left: 36%; top: 84%; --dur: 7.2s; --delay: -2.1s; }
+  .theme-particles span:nth-child(4) { left: 55%; top: 72%; --dur: 5.8s; --delay: -0.7s; }
+  .theme-particles span:nth-child(5) { left: 69%; top: 82%; --dur: 6.4s; --delay: -1.8s; }
+  .theme-particles span:nth-child(6) { left: 82%; top: 68%; --dur: 7.6s; --delay: -2.4s; }
+  .theme-particles span:nth-child(7) { left: 14%; top: 54%; --dur: 6.2s; --delay: -3s; }
+  .theme-particles span:nth-child(8) { left: 74%; top: 48%; --dur: 8s; --delay: -1.5s; }
+
+  .question-card {
+    transition: background 0.35s ease, border-color 0.35s ease, box-shadow 0.35s ease, transform 0.35s ease;
+  }
+
+  .lesson-card[data-theme='exothermic'] .question-card {
+    background: linear-gradient(180deg, rgba(255, 244, 235, 0.98), rgba(255, 233, 214, 0.96));
+    border-color: rgba(255, 138, 82, 0.35);
+    box-shadow: inset 0 0 0 1px rgba(255, 191, 125, 0.24);
+    transform: translateY(-2px);
+  }
+
+  .lesson-card[data-theme='endothermic'] .question-card {
+    background: linear-gradient(180deg, rgba(239, 251, 255, 0.98), rgba(223, 244, 255, 0.96));
+    border-color: rgba(47, 125, 244, 0.24);
+    box-shadow: inset 0 0 0 1px rgba(138, 220, 255, 0.28);
+    transform: translateY(-2px);
+  }
+
+  .lesson-card[data-theme='exothermic'] .lesson-header {
+    background:
+      radial-gradient(circle at top left, rgba(255, 213, 77, 0.42), transparent 32%),
+      linear-gradient(135deg, #ff8a52, #ef6b2e 62%, #d94a33);
+  }
+
+  .lesson-card[data-theme='endothermic'] .lesson-header {
+    background:
+      radial-gradient(circle at top left, rgba(184, 244, 255, 0.28), transparent 34%),
+      linear-gradient(135deg, #2f7df4, #26a7e8 60%, #6dd6ff);
+  }
+
+  .answer-btn {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+    transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease, background-color 0.22s ease;
+  }
+
+  .answer-btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transform: scale(0.92);
+    transition: opacity 0.25s ease, transform 0.25s ease;
+    z-index: 0;
+  }
+
+  .answer-btn > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  .answer-btn:hover,
+  .answer-btn:focus-visible {
+    transform: translateY(-4px) scale(1.01);
+  }
+
+  .answer-btn:hover::before,
+  .answer-btn:focus-visible::before {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  .answer-btn--exo::before {
+    background:
+      radial-gradient(circle at 28% 18%, rgba(255, 213, 77, 0.52), transparent 34%),
+      radial-gradient(circle at 72% 82%, rgba(255, 138, 82, 0.32), transparent 32%),
+      linear-gradient(135deg, rgba(255, 168, 104, 0.18), transparent 70%);
+  }
+
+  .answer-btn--endo::before {
+    background:
+      radial-gradient(circle at 76% 18%, rgba(184, 244, 255, 0.54), transparent 34%),
+      radial-gradient(circle at 24% 84%, rgba(47, 125, 244, 0.24), transparent 32%),
+      linear-gradient(135deg, rgba(103, 214, 255, 0.18), transparent 72%);
+  }
+
+  .answer-btn__icon {
+    transition: transform 0.28s ease, box-shadow 0.28s ease;
+  }
+
+  .answer-btn:hover .answer-btn__icon,
+  .answer-btn:focus-visible .answer-btn__icon {
+    transform: scale(1.08) rotate(-4deg);
+    box-shadow: 0 18px 30px rgba(19, 34, 56, 0.16);
+  }
+
+  .reaction-layer {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    pointer-events: none;
+    overflow: hidden;
+  }
+
+  .reaction-badge {
+    position: absolute;
+    left: 50%;
+    top: 40%;
+    min-width: 220px;
+    padding: 18px 22px;
+    border-radius: 24px;
+    text-align: center;
+    font-weight: 800;
+    color: #fff;
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.6);
+    box-shadow: 0 20px 40px rgba(19, 34, 56, 0.18);
+    animation: reactionPop 0.95s ease forwards;
+  }
+
+  .reaction-badge--correct {
+    background: linear-gradient(135deg, #18c59d, #2f7df4);
+  }
+
+  .reaction-badge--wrong {
+    background: linear-gradient(135deg, #ff8a52, #ff5b6e);
+  }
+
+  .reaction-badge__emoji {
+    display: block;
+    font-size: 44px;
+    line-height: 1;
+  }
+
+  .reaction-badge__text {
+    display: block;
+    margin-top: 8px;
+    font-size: 24px;
+    letter-spacing: -0.04em;
+  }
+
+  .reaction-badge__sub {
+    display: block;
+    margin-top: 6px;
+    font-size: 13px;
+    opacity: 0.9;
+  }
+
+  .reaction-particle {
+    position: absolute;
+    left: 50%;
+    top: 46%;
+    font-size: 28px;
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.3);
+    animation: particleBurst 0.95s ease-out forwards;
+    animation-delay: var(--delay, 0s);
+  }
+
+  .feedback-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+    padding: 10px 14px;
+    border-radius: 999px;
+    font-weight: 800;
+  }
+
+  .feedback-badge--correct {
+    background: rgba(24, 197, 157, 0.12);
+    color: #119071;
+  }
+
+  .feedback-badge--wrong {
+    background: rgba(255, 91, 110, 0.12);
+    color: #d83b56;
+  }
+
+  .feedback-badge__emoji {
+    font-size: 24px;
+    line-height: 1;
+    animation: bounceMini 0.8s ease infinite alternate;
+  }
+
+  @keyframes reactionPop {
+    0% {
+      opacity: 0;
+      transform: translate(-50%, -50%) scale(0.6);
+    }
+    18% {
+      opacity: 1;
+    }
+    52% {
+      transform: translate(-50%, -58%) scale(1.08);
+    }
+    100% {
+      opacity: 0;
+      transform: translate(-50%, -76%) scale(0.92);
+    }
+  }
+
+  @keyframes particleBurst {
+    0% {
+      opacity: 0;
+      transform: translate(-50%, -50%) scale(0.3);
+    }
+    12% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0;
+      transform: translate(calc(-50% + var(--x, 0px)), calc(-50% + var(--y, 0px))) scale(1.2) rotate(var(--r, 0deg));
+    }
+  }
+
+  @keyframes correctPulse {
+    0% { box-shadow: var(--shadow); }
+    35% { box-shadow: 0 0 0 12px rgba(24, 197, 157, 0.18), 0 22px 60px rgba(30, 52, 83, 0.18); }
+    100% { box-shadow: var(--shadow); }
+  }
+
+  @keyframes wrongShake {
+    0%, 100% { transform: translateX(0); }
+    15% { transform: translateX(-8px) rotate(-1deg); }
+    30% { transform: translateX(7px) rotate(1deg); }
+    45% { transform: translateX(-6px); }
+    60% { transform: translateX(5px); }
+    75% { transform: translateX(-3px); }
+  }
+
+  @keyframes bounceMini {
+    from { transform: translateY(0); }
+    to { transform: translateY(-4px) scale(1.06); }
+  }
+
+  @keyframes emberRise {
+    0% {
+      opacity: 0;
+      transform: translate3d(0, 10px, 0) scale(0.72);
+    }
+    12% {
+      opacity: 0.9;
+    }
+    60% {
+      opacity: 0.55;
+    }
+    100% {
+      opacity: 0;
+      transform: translate3d(18px, -160px, 0) scale(1.08);
+    }
+  }
+
+  @keyframes frostDrift {
+    0% {
+      opacity: 0;
+      transform: translate3d(0, -12px, 0) rotate(45deg) scale(0.8);
+    }
+    15% {
+      opacity: 0.82;
+    }
+    62% {
+      opacity: 0.48;
+    }
+    100% {
+      opacity: 0;
+      transform: translate3d(-22px, 150px, 0) rotate(145deg) scale(1.06);
+    }
   }
 
   @media (max-width: 560px) {
@@ -206,6 +594,18 @@
     .lesson-content {
       padding: 24px;
     }
+
+    .theme-glow--warm {
+      width: 220px;
+      height: 220px;
+      right: -46px;
+    }
+
+    .theme-glow--cool {
+      width: 240px;
+      height: 240px;
+      left: -72px;
+    }
   }
 </style>
 <script>
@@ -217,6 +617,7 @@
   let timer = 15;
   let timerInterval = null;
   let shuffledQuestions = [];
+  let ambientTheme = 'neutral';
 
   const forbiddenWords = ['바보', '멍청이', '시발', '씨발', '개새끼', '미친', '지랄', '병신', '凸', '좆', '박규'];
 
@@ -251,6 +652,98 @@
       svg = svg.replace(/width="\d+"/, `width="${size}"`).replace(/height="\d+"/, `height="${size}"`);
     }
     return svg;
+  }
+
+  function setAmbientTheme(theme) {
+    ambientTheme = theme || 'neutral';
+    const lessonCard = document.getElementById('lesson-card-shell');
+    if (lessonCard) lessonCard.dataset.theme = ambientTheme;
+  }
+
+  function previewAmbientTheme(theme) {
+    const lessonCard = document.getElementById('lesson-card-shell');
+    if (!lessonCard) return;
+    lessonCard.dataset.theme = theme || ambientTheme || 'neutral';
+  }
+
+  function syncAmbientTheme() {
+    if (gameState !== 'playing') {
+      setAmbientTheme('neutral');
+      return;
+    }
+
+    const currentQ = shuffledQuestions[currentIdx];
+    if (feedback && currentQ) {
+      setAmbientTheme(currentQ.type);
+      return;
+    }
+
+    setAmbientTheme('neutral');
+  }
+
+  function attachThemePreview(button, theme) {
+    button.addEventListener('mouseenter', () => previewAmbientTheme(theme));
+    button.addEventListener('mouseleave', () => previewAmbientTheme());
+    button.addEventListener('focus', () => previewAmbientTheme(theme));
+    button.addEventListener('blur', () => previewAmbientTheme());
+  }
+
+  function triggerReaction(kind) {
+    const layer = document.getElementById('reaction-layer');
+    const lessonCard = document.getElementById('lesson-card-shell');
+    if (!layer || !lessonCard) return;
+
+    const configs = {
+      correct: {
+        emoji: '🎉',
+        text: '정답!',
+        sub: '열의 흐름을 제대로 잡았어요',
+        badgeClass: 'reaction-badge--correct',
+        cardClass: 'is-correct',
+        particles: ['✨', '⭐', '💥', '🎊', '🧪', '🔥']
+      },
+      wrong: {
+        emoji: '😵',
+        text: '앗!',
+        sub: '설명을 보고 바로 감 잡아봐요',
+        badgeClass: 'reaction-badge--wrong',
+        cardClass: 'is-wrong',
+        particles: ['💨', '⚡', '❌', '🤯', '🌀', '🥶']
+      }
+    };
+
+    const config = configs[kind];
+    if (!config) return;
+
+    layer.textContent = '';
+    lessonCard.classList.remove('is-correct', 'is-wrong');
+    void lessonCard.offsetWidth;
+    lessonCard.classList.add(config.cardClass);
+
+    const badge = document.createElement('div');
+    badge.className = `reaction-badge ${config.badgeClass}`;
+    badge.innerHTML = `
+      <span class="reaction-badge__emoji">${config.emoji}</span>
+      <span class="reaction-badge__text">${config.text}</span>
+      <span class="reaction-badge__sub">${config.sub}</span>
+    `;
+    layer.appendChild(badge);
+
+    for (let idx = 0; idx < 14; idx++) {
+      const particle = document.createElement('span');
+      particle.className = 'reaction-particle';
+      particle.textContent = config.particles[idx % config.particles.length];
+      particle.style.setProperty('--x', `${(Math.random() - 0.5) * 320}px`);
+      particle.style.setProperty('--y', `${-70 - Math.random() * 180}px`);
+      particle.style.setProperty('--r', `${(Math.random() - 0.5) * 180}deg`);
+      particle.style.setProperty('--delay', `${idx * 0.02}s`);
+      layer.appendChild(particle);
+    }
+
+    window.setTimeout(() => {
+      layer.textContent = '';
+      lessonCard.classList.remove(config.cardClass);
+    }, 1000);
   }
 
   function validateNickname() {
@@ -305,9 +798,16 @@
     const isCorrect = selectedType === currentQ.type;
     if (isCorrect) {
       score++;
-      feedback = { status: 'correct', text: '정답입니다!', desc: currentQ.desc };
+      feedback = { status: 'correct', text: '정답입니다!', desc: currentQ.desc, emoji: '🎉' };
+      triggerReaction('correct');
     } else {
-      feedback = { status: 'wrong', text: selectedType === null ? '시간 초과!' : '아쉬워요!', desc: currentQ.desc };
+      feedback = {
+        status: 'wrong',
+        text: selectedType === null ? '시간 초과!' : '아쉬워요!',
+        desc: currentQ.desc,
+        emoji: selectedType === null ? '⏰' : '😵'
+      };
+      triggerReaction('wrong');
     }
     render();
   }
@@ -361,6 +861,8 @@
     } else if (gameState === 'result') {
       renderResult(content);
     }
+
+    syncAmbientTheme();
   }
 
   function renderLobby(container) {
@@ -450,7 +952,7 @@
     wrapper.appendChild(topBar);
 
     const questionCard = document.createElement('div');
-    questionCard.className = 'bg-slate-50 p-6 rounded-2xl border-2 border-dashed border-slate-200 min-h-[120px] flex items-center justify-center text-center';
+    questionCard.className = 'question-card bg-slate-50 p-6 rounded-2xl border-2 border-dashed border-slate-200 min-h-[120px] flex items-center justify-center text-center';
     const questionText = document.createElement('h3');
     questionText.className = 'text-xl font-bold leading-tight';
     questionText.textContent = q.text;
@@ -462,28 +964,30 @@
       btnGrid.className = 'grid grid-cols-2 gap-4';
 
       const exoBtn = document.createElement('button');
-      exoBtn.className = 'group bg-orange-50 hover:bg-orange-100 border-2 border-orange-200 p-6 rounded-2xl transition-all flex flex-col items-center gap-3 active:scale-95';
+      exoBtn.className = 'answer-btn answer-btn--exo group bg-orange-50 hover:bg-orange-100 border-2 border-orange-200 p-6 rounded-2xl transition-all flex flex-col items-center gap-3 active:scale-95';
       const exoIcon = document.createElement('div');
-      exoIcon.className = 'w-12 h-12 bg-orange-500 rounded-full flex items-center justify-center text-white shadow-md';
+      exoIcon.className = 'answer-btn__icon w-12 h-12 bg-orange-500 rounded-full flex items-center justify-center text-white shadow-md';
       exoIcon.innerHTML = icon('flame', 24);
       exoBtn.appendChild(exoIcon);
       const exoLabel = document.createElement('span');
       exoLabel.className = 'font-bold text-orange-700';
       exoLabel.textContent = '발열 반응';
       exoBtn.appendChild(exoLabel);
+      attachThemePreview(exoBtn, 'exothermic');
       exoBtn.addEventListener('click', () => handleAnswer('exothermic'));
       btnGrid.appendChild(exoBtn);
 
       const endoBtn = document.createElement('button');
-      endoBtn.className = 'group bg-cyan-50 hover:bg-cyan-100 border-2 border-cyan-200 p-6 rounded-2xl transition-all flex flex-col items-center gap-3 active:scale-95';
+      endoBtn.className = 'answer-btn answer-btn--endo group bg-cyan-50 hover:bg-cyan-100 border-2 border-cyan-200 p-6 rounded-2xl transition-all flex flex-col items-center gap-3 active:scale-95';
       const endoIcon = document.createElement('div');
-      endoIcon.className = 'w-12 h-12 bg-cyan-500 rounded-full flex items-center justify-center text-white shadow-md';
+      endoIcon.className = 'answer-btn__icon w-12 h-12 bg-cyan-500 rounded-full flex items-center justify-center text-white shadow-md';
       endoIcon.innerHTML = icon('snowflake', 24);
       endoBtn.appendChild(endoIcon);
       const endoLabel = document.createElement('span');
       endoLabel.className = 'font-bold text-cyan-700';
       endoLabel.textContent = '흡열 반응';
       endoBtn.appendChild(endoLabel);
+      attachThemePreview(endoBtn, 'endothermic');
       endoBtn.addEventListener('click', () => handleAnswer('endothermic'));
       btnGrid.appendChild(endoBtn);
 
@@ -495,13 +999,17 @@
       const fbCard = document.createElement('div');
       fbCard.className = `p-6 rounded-2xl ${isCorrect ? 'bg-green-50 border-2 border-green-200' : 'bg-red-50 border-2 border-red-200'}`;
 
-      const fbHeader = document.createElement('div');
-      fbHeader.className = 'flex items-center gap-2 mb-2';
+      const fbBadge = document.createElement('div');
+      fbBadge.className = `feedback-badge ${isCorrect ? 'feedback-badge--correct' : 'feedback-badge--wrong'}`;
+      const fbEmoji = document.createElement('span');
+      fbEmoji.className = 'feedback-badge__emoji';
+      fbEmoji.textContent = feedback.emoji || (isCorrect ? '🎉' : '😵');
+      fbBadge.appendChild(fbEmoji);
       const fbText = document.createElement('span');
-      fbText.className = `font-bold ${isCorrect ? 'text-green-700' : 'text-red-700'}`;
+      fbText.className = 'font-bold';
       fbText.textContent = feedback.text;
-      fbHeader.appendChild(fbText);
-      fbCard.appendChild(fbHeader);
+      fbBadge.appendChild(fbText);
+      fbCard.appendChild(fbBadge);
 
       const fbDesc = document.createElement('p');
       fbDesc.className = 'text-sm text-slate-600 leading-relaxed mb-4';
@@ -612,13 +1120,26 @@
       <div class="lesson-brand__badge">Lesson 01</div>
     </div>
 
-    <div class="lesson-card">
+    <div class="lesson-card" id="lesson-card-shell" data-theme="neutral">
+      <div class="theme-stage" aria-hidden="true">
+        <div class="theme-glow theme-glow--warm"></div>
+        <div class="theme-glow theme-glow--cool"></div>
+        <div class="theme-particles theme-particles--warm">
+          <span></span><span></span><span></span><span></span>
+          <span></span><span></span><span></span><span></span>
+        </div>
+        <div class="theme-particles theme-particles--cool">
+          <span></span><span></span><span></span><span></span>
+          <span></span><span></span><span></span><span></span>
+        </div>
+      </div>
       <div class="lesson-header">
         <div class="lesson-header__eyebrow">Chemistry Mission</div>
         <h1 class="lesson-title">발열반응과<br>흡열반응 마스터</h1>
         <p class="lesson-subtitle">열을 내는지, 열을 빼앗는지 빠르게 구분해보세요.</p>
       </div>
 
+      <div id="reaction-layer" class="reaction-layer" aria-hidden="true"></div>
       <div id="content" class="lesson-content"></div>
     </div>
   </div>
