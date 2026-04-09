@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>발열반응과 흡열반응 마스터</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script type="module">
+  import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.7.1/firebase-app.js';
+  import { getAuth, signInAnonymously, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/11.7.1/firebase-auth.js';
+  import { getFirestore, collection, addDoc, onSnapshot, query, serverTimestamp } from 'https://www.gstatic.com/firebasejs/11.7.1/firebase-firestore.js';
+
+  // --- Firebase 초기화 ---
+  const firebaseConfig = typeof __firebase_config !== 'undefined'
+    ? JSON.parse(__firebase_config)
+    : {};
+  const appId = typeof __app_id !== 'undefined' ? __app_id : 'energy-master-app';
+
+  let app, auth, db, currentUser = null;
+  try {
+    app = initializeApp(firebaseConfig);
+    auth = getAuth(app);
+    db = getFirestore(app);
+  } catch (e) {
+    console.warn('Firebase 초기화 실패:', e);
+  }
+
+  // --- 상태 ---
+  let gameState = 'lobby';
+  let nickname = '';
+  let score = 0;
+  let currentIdx = 0;
+  let feedback = null;
+  let timer = 15;
+  let timerInterval = null;
+  let isSubmitting = false;
+  let rankings = [];
+  let shuffledQuestions = [];
+  let unsubscribeRankings = null;
+
+  const forbiddenWords = ['바보', '멍청이', '시발', '씨발', '개새끼', '미친', '지랄', '병신', '凸', '좆', '박규'];
+
+  const questions = [
+    { id: 1, text: "나무가 타는 '연소 반응'", type: "exothermic", desc: "연소는 빛과 열을 내뿜는 대표적인 발열 반응이에요." },
+    { id: 2, text: "식물의 '광합성'", type: "endothermic", desc: "태양의 빛에너지를 흡수하여 양분을 만드는 흡열 반응이에요." },
+    { id: 3, text: "겨울철 '휴대용 손난로'", type: "exothermic", desc: "철 가루가 산소와 반응하며 열을 방출하는 발열 반응이에요." },
+    { id: 4, text: "질산 암모늄과 물의 반응 (냉각팩)", type: "endothermic", desc: "주변의 열을 흡수하여 온도를 낮추는 흡열 반응이에요." },
+    { id: 5, text: "산과 염기의 '중화 반응'", type: "exothermic", desc: "산과 염기가 만나면 중화열이 발생하는 발열 반응이에요." },
+    { id: 6, text: "염화 칼슘이 눈을 녹일 때", type: "exothermic", desc: "염화 칼슘이 물에 녹으면서 열을 내놓아 눈을 녹이는 발열 반응이에요." },
+    { id: 7, text: "탄산수소 나트륨의 열분해", type: "endothermic", desc: "가열(열에너지 흡수)을 해야만 분해되는 흡열 반응이에요." },
+    { id: 8, text: "물에 수산화 나트륨 녹이기", type: "exothermic", desc: "수산화 나트륨이 용해되면서 열을 방출하는 발열 반응이에요." },
+    { id: 9, text: "달걀 익히기", type: "endothermic", desc: "열을 흡수하여 단백질 구조가 변하는 흡열 반응이에요." },
+    { id: 10, text: "금속과 산의 반응", type: "exothermic", desc: "마그네슘과 묽은 염산이 반응하면 수소 기체와 함께 열이 발생하는 발열 반응이에요." }
+  ];
+
+  // --- SVG 아이콘 ---
+  const icons = {
+    flame: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>`,
+    snowflake: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="2" x2="22" y1="12" y2="12"/><line x1="12" x2="12" y1="2" y2="22"/><path d="m20 16-4-4 4-4"/><path d="m4 8 4 4-4 4"/><path d="m16 4-4 4-4-4"/><path d="m8 20 4-4 4 4"/></svg>`,
+    trophy: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>`,
+    user: `<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`,
+    qrcode: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="5" height="5" x="3" y="3" rx="1"/><rect width="5" height="5" x="16" y="3" rx="1"/><rect width="5" height="5" x="3" y="16" rx="1"/><path d="M21 16h-3a2 2 0 0 0-2 2v3"/><path d="M21 21v.01"/><path d="M12 7v3a2 2 0 0 1-2 2H7"/><path d="M3 12h.01"/><path d="M12 3h.01"/><path d="M12 16v.01"/><path d="M16 12h1"/><path d="M21 12v.01"/><path d="M12 21v-1"/></svg>`,
+    list: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" x2="21" y1="6" y2="6"/><line x1="8" x2="21" y1="12" y2="12"/><line x1="8" x2="21" y1="18" y2="18"/><line x1="3" x2="3.01" y1="6" y2="6"/><line x1="3" x2="3.01" y1="12" y2="12"/><line x1="3" x2="3.01" y1="18" y2="18"/></svg>`,
+    x: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>`,
+    chevronRight: `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>`,
+    refreshCw: `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>`,
+    alertCircle: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>`,
+    link: `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>`,
+  };
+
+  function icon(name, size) {
+    let svg = icons[name] || '';
+    if (size) {
+      svg = svg.replace(/width="\d+"/, `width="${size}"`).replace(/height="\d+"/, `height="${size}"`);
+    }
+    return svg;
+  }
+
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  // --- DOM 헬퍼: textContent 기반 안전한 요소 생성 ---
+  function setText(el, text) {
+    el.textContent = text;
+  }
+
+  // --- Firebase 인증 ---
+  async function initFirebase() {
+    if (!auth) return;
+    try {
+      await signInAnonymously(auth);
+    } catch (err) {
+      console.error("인증 실패:", err);
+    }
+    onAuthStateChanged(auth, (u) => {
+      if (u) {
+        currentUser = u;
+        listenRankings();
+      }
+    });
+  }
+
+  // --- 랭킹 실시간 감시 ---
+  function listenRankings() {
+    if (!db || !currentUser) return;
+    if (unsubscribeRankings) unsubscribeRankings();
+    const rankingsRef = collection(db, 'artifacts', appId, 'public', 'data', 'rankings');
+    unsubscribeRankings = onSnapshot(query(rankingsRef), (snapshot) => {
+      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      rankings = data.sort((a, b) => {
+        if (b.score !== a.score) return b.score - a.score;
+        const timeA = a.createdAt?.toMillis ? a.createdAt.toMillis() : (a.createdAt || 0);
+        const timeB = b.createdAt?.toMillis ? b.createdAt.toMillis() : (b.createdAt || 0);
+        return timeA - timeB;
+      }).slice(0, 10);
+      if (gameState === 'ranking') render();
+    }, (error) => {
+      console.error("랭킹 로딩 에러:", error);
+    });
+  }
+
+  // --- 게임 로직 ---
+  function validateNickname() {
+    const errorEl = document.getElementById('error-msg');
+    if (nickname.trim().length < 2) {
+      if (errorEl) errorEl.textContent = '별명을 2글자 이상 입력해주세요.';
+      return false;
+    }
+    if (forbiddenWords.some(w => nickname.includes(w))) {
+      if (errorEl) errorEl.textContent = '부적절한 단어가 포함되어 있습니다.';
+      return false;
+    }
+    return true;
+  }
+
+  function startGame() {
+    if (!validateNickname()) return;
+    shuffledQuestions = [...questions].sort(() => Math.random() - 0.5);
+    score = 0;
+    currentIdx = 0;
+    feedback = null;
+    timer = 15;
+    gameState = 'playing';
+    startTimer();
+    render();
+  }
+
+  function startTimer() {
+    clearInterval(timerInterval);
+    timer = 15;
+    timerInterval = setInterval(() => {
+      timer--;
+      updateTimerDisplay();
+      if (timer <= 0) {
+        clearInterval(timerInterval);
+        handleAnswer(null);
+      }
+    }, 1000);
+  }
+
+  function updateTimerDisplay() {
+    const el = document.getElementById('timer-display');
+    if (el) {
+      el.textContent = timer + '초';
+      el.className = `px-3 py-1 rounded-full font-semibold text-sm ${timer < 5 ? 'bg-red-100 text-red-600 animate-pulse' : 'bg-slate-100 text-slate-400'}`;
+    }
+  }
+
+  function handleAnswer(selectedType) {
+    clearInterval(timerInterval);
+    const currentQ = shuffledQuestions[currentIdx];
+    const isCorrect = selectedType === currentQ.type;
+    if (isCorrect) {
+      score++;
+      feedback = { status: 'correct', text: '정답입니다!', desc: currentQ.desc };
+    } else {
+      feedback = { status: 'wrong', text: selectedType === null ? '시간 초과!' : '아쉬워요!', desc: currentQ.desc };
+    }
+    render();
+  }
+
+  function nextQuestion() {
+    if (currentIdx + 1 < shuffledQuestions.length) {
+      currentIdx++;
+      feedback = null;
+      startTimer();
+      render();
+    } else {
+      clearInterval(timerInterval);
+      gameState = 'result';
+      render();
+    }
+  }
+
+  async function submitScore() {
+    if (!currentUser || isSubmitting || !db) return;
+    isSubmitting = true;
+    render();
+    try {
+      const rankingsRef = collection(db, 'artifacts', appId, 'public', 'data', 'rankings');
+      await addDoc(rankingsRef, {
+        nickname,
+        score,
+        userId: currentUser.uid,
+        createdAt: serverTimestamp()
+      });
+      gameState = 'ranking';
+    } catch (err) {
+      console.error("점수 등록 실패:", err);
+    } finally {
+      isSubmitting = false;
+      render();
+    }
+  }
+
+  function goToLobby() {
+    clearInterval(timerInterval);
+    gameState = 'lobby';
+    feedback = null;
+    render();
+  }
+
+  function goToRanking() {
+    gameState = 'ranking';
+    render();
+  }
+
+  function showQRModal() {
+    const modal = document.getElementById('qr-modal');
+    const qrImg = document.getElementById('qr-img');
+    const urlDisplay = document.getElementById('qr-url');
+    const currentUrl = window.location.href;
+    qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(currentUrl)}&size=300x300&ecc=M`;
+    urlDisplay.textContent = currentUrl;
+    modal.classList.remove('hidden');
+  }
+
+  function hideQRModal() {
+    document.getElementById('qr-modal').classList.add('hidden');
+  }
+
+  // --- DOM 기반 렌더링 ---
+  function render() {
+    const content = document.getElementById('content');
+    // 기존 내용 제거
+    content.textContent = '';
+
+    if (gameState === 'lobby') {
+      renderLobby(content);
+    } else if (gameState === 'playing') {
+      renderPlaying(content);
+    } else if (gameState === 'result') {
+      renderResult(content);
+    } else if (gameState === 'ranking') {
+      renderRanking(content);
+    }
+  }
+
+  function renderLobby(container) {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'text-center space-y-6';
+
+    // 아바타 + QR 버튼
+    const avatarArea = document.createElement('div');
+    avatarArea.className = 'flex justify-center py-2 relative';
+
+    const avatarCircle = document.createElement('div');
+    avatarCircle.className = 'w-20 h-20 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600';
+    avatarCircle.innerHTML = icon('user', 40);
+    avatarArea.appendChild(avatarCircle);
+
+    const qrBtn = document.createElement('button');
+    qrBtn.className = 'absolute right-0 bottom-0 bg-white p-2 rounded-full shadow-md border border-slate-100 text-indigo-600 hover:bg-indigo-50 transition-colors animate-bounce';
+    qrBtn.innerHTML = icon('qrcode', 20);
+    qrBtn.addEventListener('click', showQRModal);
+    avatarArea.appendChild(qrBtn);
+    wrapper.appendChild(avatarArea);
+
+    // 입력 영역
+    const formArea = document.createElement('div');
+    formArea.className = 'space-y-4';
+
+    const inputGroup = document.createElement('div');
+    inputGroup.className = 'text-left';
+
+    const label = document.createElement('label');
+    label.className = 'block text-sm font-bold text-slate-500 mb-2 ml-1';
+    label.textContent = '게이머 별명';
+    inputGroup.appendChild(label);
+
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.id = 'nickname-input';
+    input.value = nickname;
+    input.placeholder = '별명을 입력하세요';
+    input.className = 'w-full px-4 py-4 rounded-2xl border-2 transition-all outline-none text-lg font-medium border-slate-100 bg-slate-50 focus:border-indigo-400';
+    input.addEventListener('input', (e) => {
+      nickname = e.target.value;
+      const errEl = document.getElementById('error-msg');
+      if (errEl) errEl.textContent = '';
+    });
+    inputGroup.appendChild(input);
+
+    const errorP = document.createElement('p');
+    errorP.id = 'error-msg';
+    errorP.className = 'text-red-500 text-xs mt-2 ml-1';
+    inputGroup.appendChild(errorP);
+
+    formArea.appendChild(inputGroup);
+
+    const btnRow = document.createElement('div');
+    btnRow.className = 'flex gap-2';
+
+    const startBtn = document.createElement('button');
+    startBtn.className = 'flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-2xl transition-all shadow-lg active:scale-95';
+    startBtn.textContent = '도전 시작하기';
+    startBtn.addEventListener('click', startGame);
+    btnRow.appendChild(startBtn);
+
+    const rankBtn = document.createElement('button');
+    rankBtn.className = 'bg-indigo-50 hover:bg-indigo-100 text-indigo-600 p-4 rounded-2xl transition-all';
+    rankBtn.innerHTML = icon('list', 24);
+    rankBtn.addEventListener('click', goToRanking);
+    btnRow.appendChild(rankBtn);
+
+    formArea.appendChild(btnRow);
+    wrapper.appendChild(formArea);
+
+    const hint = document.createElement('p');
+    hint.className = 'text-[10px] text-slate-400';
+    hint.textContent = 'QR 아이콘을 눌러 친구들을 초대하세요!';
+    wrapper.appendChild(hint);
+
+    container.appendChild(wrapper);
+  }
+
+  function renderPlaying(container) {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'space-y-6';
+
+    const q = shuffledQuestions[currentIdx];
+
+    // 상단 바
+    const topBar = document.createElement('div');
+    topBar.className = 'flex justify-between items-center text-sm';
+
+    const nameTag = document.createElement('span');
+    nameTag.className = 'bg-indigo-50 text-indigo-600 px-3 py-1 rounded-full truncate max-w-[120px] font-semibold';
+    nameTag.textContent = nickname + ' 님';
+    topBar.appendChild(nameTag);
+
+    const timerEl = document.createElement('span');
+    timerEl.id = 'timer-display';
+    timerEl.className = `px-3 py-1 rounded-full font-semibold text-sm ${timer < 5 ? 'bg-red-100 text-red-600 animate-pulse' : 'bg-slate-100 text-slate-400'}`;
+    timerEl.textContent = timer + '초';
+    topBar.appendChild(timerEl);
+    wrapper.appendChild(topBar);
+
+    // 문제 카드
+    const questionCard = document.createElement('div');
+    questionCard.className = 'bg-slate-50 p-6 rounded-2xl border-2 border-dashed border-slate-200 min-h-[120px] flex items-center justify-center text-center';
+    const questionText = document.createElement('h3');
+    questionText.className = 'text-xl font-bold leading-tight';
+    questionText.textContent = q.text;
+    questionCard.appendChild(questionText);
+    wrapper.appendChild(questionCard);
+
+    if (!feedback) {
+      // 선택 버튼
+      const btnGrid = document.createElement('div');
+      btnGrid.className = 'grid grid-cols-2 gap-4';
+
+      const exoBtn = document.createElement('button');
+      exoBtn.className = 'group bg-orange-50 hover:bg-orange-100 border-2 border-orange-200 p-6 rounded-2xl transition-all flex flex-col items-center gap-3 active:scale-95';
+      const exoIcon = document.createElement('div');
+      exoIcon.className = 'w-12 h-12 bg-orange-500 rounded-full flex items-center justify-center text-white shadow-md';
+      exoIcon.innerHTML = icon('flame', 24);
+      exoBtn.appendChild(exoIcon);
+      const exoLabel = document.createElement('span');
+      exoLabel.className = 'font-bold text-orange-700';
+      exoLabel.textContent = '발열 반응';
+      exoBtn.appendChild(exoLabel);
+      exoBtn.addEventListener('click', () => handleAnswer('exothermic'));
+      btnGrid.appendChild(exoBtn);
+
+      const endoBtn = document.createElement('button');
+      endoBtn.className = 'group bg-cyan-50 hover:bg-cyan-100 border-2 border-cyan-200 p-6 rounded-2xl transition-all flex flex-col items-center gap-3 active:scale-95';
+      const endoIcon = document.createElement('div');
+      endoIcon.className = 'w-12 h-12 bg-cyan-500 rounded-full flex items-center justify-center text-white shadow-md';
+      endoIcon.innerHTML = icon('snowflake', 24);
+      endoBtn.appendChild(endoIcon);
+      const endoLabel = document.createElement('span');
+      endoLabel.className = 'font-bold text-cyan-700';
+      endoLabel.textContent = '흡열 반응';
+      endoBtn.appendChild(endoLabel);
+      endoBtn.addEventListener('click', () => handleAnswer('endothermic'));
+      btnGrid.appendChild(endoBtn);
+
+      wrapper.appendChild(btnGrid);
+    } else {
+      // 피드백
+      const isCorrect = feedback.status === 'correct';
+      const isLast = currentIdx + 1 === shuffledQuestions.length;
+
+      const fbCard = document.createElement('div');
+      fbCard.className = `p-6 rounded-2xl ${isCorrect ? 'bg-green-50 border-2 border-green-200' : 'bg-red-50 border-2 border-red-200'}`;
+
+      const fbHeader = document.createElement('div');
+      fbHeader.className = 'flex items-center gap-2 mb-2';
+      const fbText = document.createElement('span');
+      fbText.className = `font-bold ${isCorrect ? 'text-green-700' : 'text-red-700'}`;
+      fbText.textContent = feedback.text;
+      fbHeader.appendChild(fbText);
+      fbCard.appendChild(fbHeader);
+
+      const fbDesc = document.createElement('p');
+      fbDesc.className = 'text-sm text-slate-600 leading-relaxed mb-4';
+      fbDesc.textContent = feedback.desc;
+      fbCard.appendChild(fbDesc);
+
+      const nextBtn = document.createElement('button');
+      nextBtn.className = 'w-full bg-white hover:bg-slate-50 text-slate-800 font-bold py-3 rounded-xl border border-slate-200 flex items-center justify-center gap-2';
+      const nextLabel = document.createTextNode(isLast ? '결과 확인하기 ' : '다음 문제 ');
+      nextBtn.appendChild(nextLabel);
+      const chevron = document.createElement('span');
+      chevron.innerHTML = icon('chevronRight');
+      nextBtn.appendChild(chevron);
+      nextBtn.addEventListener('click', nextQuestion);
+      fbCard.appendChild(nextBtn);
+
+      wrapper.appendChild(fbCard);
+    }
+
+    container.appendChild(wrapper);
+  }
+
+  function renderResult(container) {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'text-center space-y-6 py-4';
+
+    // 트로피
+    const trophyArea = document.createElement('div');
+    trophyArea.className = 'space-y-2';
+    const trophyIcon = document.createElement('div');
+    trophyIcon.className = 'mx-auto text-yellow-500 animate-bounce w-fit';
+    trophyIcon.innerHTML = icon('trophy', 60);
+    trophyArea.appendChild(trophyIcon);
+    const congrats = document.createElement('h2');
+    congrats.className = 'text-2xl font-black text-slate-800';
+    congrats.textContent = nickname + ' 님, 수고하셨습니다!';
+    trophyArea.appendChild(congrats);
+    wrapper.appendChild(trophyArea);
+
+    // 점수
+    const scoreCard = document.createElement('div');
+    scoreCard.className = 'bg-slate-50 p-6 rounded-2xl border border-slate-100';
+    const scoreLabel = document.createElement('p');
+    scoreLabel.className = 'text-slate-500 font-bold mb-1';
+    scoreLabel.textContent = '최종 점수 (맞춘 개수)';
+    scoreCard.appendChild(scoreLabel);
+    const scoreDisplay = document.createElement('div');
+    scoreDisplay.className = 'text-6xl font-black text-indigo-600 tracking-tighter';
+    scoreDisplay.textContent = score;
+    const scoreTotal = document.createElement('span');
+    scoreTotal.className = 'text-2xl text-slate-400 font-normal ml-1';
+    scoreTotal.textContent = '/ ' + shuffledQuestions.length;
+    scoreDisplay.appendChild(scoreTotal);
+    scoreCard.appendChild(scoreDisplay);
+    wrapper.appendChild(scoreCard);
+
+    // 버튼
+    const btnArea = document.createElement('div');
+    btnArea.className = 'space-y-3';
+
+    const submitBtn = document.createElement('button');
+    submitBtn.className = `w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-2xl transition-all shadow-lg flex items-center justify-center gap-2 ${isSubmitting ? 'opacity-50' : ''}`;
+    if (isSubmitting) submitBtn.disabled = true;
+    const listIcon = document.createElement('span');
+    listIcon.innerHTML = icon('list', 20);
+    submitBtn.appendChild(listIcon);
+    const submitLabel = document.createTextNode(isSubmitting ? ' 등록 중...' : ' 랭킹에 내 점수 등록하기');
+    submitBtn.appendChild(submitLabel);
+    submitBtn.addEventListener('click', submitScore);
+    btnArea.appendChild(submitBtn);
+
+    const retryBtn = document.createElement('button');
+    retryBtn.className = 'w-full text-slate-400 font-bold py-2 hover:text-slate-600 transition-all flex items-center justify-center gap-2';
+    const refreshIcon = document.createElement('span');
+    refreshIcon.innerHTML = icon('refreshCw');
+    retryBtn.appendChild(refreshIcon);
+    retryBtn.appendChild(document.createTextNode(' 다시 시작하기 (랭킹 미등록)'));
+    retryBtn.addEventListener('click', goToLobby);
+    btnArea.appendChild(retryBtn);
+
+    wrapper.appendChild(btnArea);
+    container.appendChild(wrapper);
+  }
+
+  function renderRanking(container) {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'space-y-6';
+
+    // 헤더
+    const header = document.createElement('div');
+    header.className = 'flex items-center justify-between';
+    const title = document.createElement('h2');
+    title.className = 'text-xl font-bold flex items-center gap-2';
+    const trophySpan = document.createElement('span');
+    trophySpan.className = 'text-yellow-500';
+    trophySpan.innerHTML = icon('trophy', 24);
+    title.appendChild(trophySpan);
+    title.appendChild(document.createTextNode(' 실시간 TOP 10'));
+    header.appendChild(title);
+
+    const closeBtn = document.createElement('button');
+    closeBtn.className = 'text-slate-400 hover:text-slate-600';
+    closeBtn.innerHTML = icon('x', 24);
+    closeBtn.addEventListener('click', goToLobby);
+    header.appendChild(closeBtn);
+    wrapper.appendChild(header);
+
+    // 랭킹 목록
+    const listArea = document.createElement('div');
+    listArea.className = 'space-y-3';
+
+    if (rankings.length === 0) {
+      const empty = document.createElement('p');
+      empty.className = 'text-center py-10 text-slate-400';
+      empty.textContent = '아직 등록된 랭킹이 없습니다.';
+      listArea.appendChild(empty);
+    } else {
+      rankings.forEach((r, idx) => {
+        const isMe = r.userId === currentUser?.uid;
+        const row = document.createElement('div');
+        row.className = `flex items-center justify-between p-4 rounded-2xl border-2 ${isMe ? 'border-indigo-500 bg-indigo-50 shadow-sm' : 'border-slate-100'}`;
+
+        const left = document.createElement('div');
+        left.className = 'flex items-center gap-3';
+        const rank = document.createElement('span');
+        rank.className = `w-8 h-8 rounded-full flex items-center justify-center font-bold ${idx < 3 ? 'bg-yellow-100 text-yellow-700' : 'bg-slate-100 text-slate-500'}`;
+        rank.textContent = idx + 1;
+        left.appendChild(rank);
+        const nameSpan = document.createElement('span');
+        nameSpan.className = 'font-bold truncate max-w-[150px]';
+        nameSpan.textContent = r.nickname;
+        left.appendChild(nameSpan);
+        row.appendChild(left);
+
+        const scoreSpan = document.createElement('div');
+        scoreSpan.className = 'font-black text-indigo-600 text-lg';
+        scoreSpan.textContent = r.score + '개';
+        row.appendChild(scoreSpan);
+
+        listArea.appendChild(row);
+      });
+    }
+    wrapper.appendChild(listArea);
+
+    // 돌아가기 버튼
+    const backBtn = document.createElement('button');
+    backBtn.className = 'w-full bg-slate-800 text-white font-bold py-4 rounded-2xl transition-all shadow-lg flex items-center justify-center gap-2 active:scale-95';
+    backBtn.textContent = '메인으로 돌아가기';
+    backBtn.addEventListener('click', goToLobby);
+    wrapper.appendChild(backBtn);
+
+    container.appendChild(wrapper);
+  }
+
+  // --- 초기화 ---
+  document.addEventListener('DOMContentLoaded', () => {
+    initFirebase();
+    render();
+
+    document.getElementById('qr-modal').addEventListener('click', (e) => {
+      if (e.target === e.currentTarget) hideQRModal();
+    });
+    document.getElementById('btn-qr-close').addEventListener('click', hideQRModal);
+    document.getElementById('btn-qr-close2').addEventListener('click', hideQRModal);
+  });
+</script>
+</head>
+<body class="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4 font-sans text-slate-800">
+
+  <div class="max-w-md w-full bg-white rounded-3xl shadow-xl overflow-hidden border border-slate-100">
+    <!-- Header -->
+    <div class="bg-indigo-600 p-6 text-white text-center">
+      <h1 class="text-xl font-bold flex items-center justify-center gap-2">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-orange-400"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>
+        발열반응과 흡열반응 마스터
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-cyan-300"><line x1="2" x2="22" y1="12" y2="12"/><line x1="12" x2="12" y1="2" y2="22"/><path d="m20 16-4-4 4-4"/><path d="m4 8 4 4-4 4"/><path d="m16 4-4 4-4-4"/><path d="m8 20 4-4 4 4"/></svg>
+      </h1>
+      <p class="text-indigo-100 text-xs mt-1 italic">"도시락을 먹게 될 자는"</p>
+    </div>
+
+    <div id="content" class="p-8"></div>
+  </div>
+
+  <!-- QR Code Modal -->
+  <div id="qr-modal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+    <div class="bg-white rounded-3xl p-8 max-w-sm w-full text-center space-y-6" onclick="event.stopPropagation()">
+      <div class="flex justify-between items-center">
+        <h3 class="text-xl font-bold">친구들과 함께하기</h3>
+        <button id="btn-qr-close" class="text-slate-400 cursor-pointer hover:text-slate-600">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+        </button>
+      </div>
+      <div class="bg-white p-4 rounded-2xl border-2 border-slate-100 inline-block shadow-inner">
+        <img id="qr-img" src="" alt="QR Code" class="w-64 h-64 mx-auto" />
+      </div>
+      <div class="space-y-2">
+        <p class="text-slate-500 text-sm font-medium">위 코드를 스캔하여 접속하세요!</p>
+        <div class="flex items-center justify-center gap-2 bg-slate-50 p-2 rounded-lg text-[10px] text-slate-400 break-all overflow-hidden border border-slate-100">
+          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+          <span id="qr-url"></span>
+        </div>
+      </div>
+      <button id="btn-qr-close2" class="w-full bg-indigo-600 text-white font-bold py-3 rounded-2xl hover:bg-indigo-700 transition-all shadow-md">닫기</button>
+    </div>
+  </div>
+
+</body>
+</html>
