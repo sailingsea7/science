@@ -22,6 +22,8 @@
     --orange: #ff8a52;
     --shadow: 0 22px 60px rgba(30, 52, 83, 0.14);
     --shadow-soft: 0 14px 36px rgba(30, 52, 83, 0.1);
+    --reaction-duration: 1.8s;
+    --reaction-particle-duration: 2s;
   }
 
   * { box-sizing: border-box; }
@@ -158,11 +160,11 @@
   }
 
   .lesson-card.is-correct {
-    animation: correctPulse 0.75s ease;
+    animation: correctPulse 1.2s ease;
   }
 
   .lesson-card.is-wrong {
-    animation: wrongShake 0.65s ease;
+    animation: wrongShake 1s ease;
   }
 
   .lesson-header {
@@ -419,7 +421,7 @@
     opacity: 0;
     transform: translate(-50%, -50%) scale(0.6);
     box-shadow: 0 20px 40px rgba(19, 34, 56, 0.18);
-    animation: reactionPop 0.95s ease forwards;
+    animation: reactionPop var(--reaction-duration) ease forwards;
   }
 
   .reaction-badge--correct {
@@ -457,7 +459,7 @@
     font-size: 28px;
     opacity: 0;
     transform: translate(-50%, -50%) scale(0.3);
-    animation: particleBurst 0.95s ease-out forwards;
+    animation: particleBurst var(--reaction-particle-duration) ease-out forwards;
     animation-delay: var(--delay, 0s);
   }
 
@@ -743,7 +745,7 @@
     window.setTimeout(() => {
       layer.textContent = '';
       lessonCard.classList.remove(config.cardClass);
-    }, 1000);
+    }, 1900);
   }
 
   function validateNickname() {
