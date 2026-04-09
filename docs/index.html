@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>과학 실험실</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@300;400;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg-deep: #0a0e1a;
+    --bg-card: #111827;
+    --bg-card-hover: #1a2340;
+    --accent-cyan: #22d3ee;
+    --accent-green: #34d399;
+    --accent-amber: #fbbf24;
+    --accent-rose: #fb7185;
+    --accent-violet: #a78bfa;
+    --text-primary: #f1f5f9;
+    --text-secondary: #94a3b8;
+    --text-muted: #475569;
+    --border: rgba(148, 163, 184, 0.08);
+  }
+
+  body {
+    font-family: 'Noto Sans KR', sans-serif;
+    background: var(--bg-deep);
+    color: var(--text-primary);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* --- 배경 그리드 --- */
+  .bg-grid {
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(148,163,184,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(148,163,184,0.03) 1px, transparent 1px);
+    background-size: 60px 60px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .bg-glow {
+    position: fixed;
+    width: 600px;
+    height: 600px;
+    border-radius: 50%;
+    filter: blur(120px);
+    opacity: 0.07;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .bg-glow--cyan { background: var(--accent-cyan); top: -200px; right: -100px; }
+  .bg-glow--violet { background: var(--accent-violet); bottom: -200px; left: -100px; }
+
+  /* --- 레이아웃 --- */
+  .container {
+    position: relative;
+    z-index: 1;
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+
+  /* --- 헤더 --- */
+  .header {
+    padding: 80px 0 20px;
+    text-align: center;
+  }
+
+  .header__badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(34, 211, 238, 0.08);
+    border: 1px solid rgba(34, 211, 238, 0.15);
+    border-radius: 100px;
+    padding: 6px 16px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--accent-cyan);
+    letter-spacing: 0.5px;
+    margin-bottom: 28px;
+    animation: fadeDown 0.6s ease-out both;
+  }
+
+  .header__badge::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    background: var(--accent-green);
+    border-radius: 50%;
+    animation: pulse-dot 2s ease-in-out infinite;
+  }
+
+  .header__title {
+    font-family: 'Black Han Sans', sans-serif;
+    font-size: clamp(48px, 8vw, 80px);
+    line-height: 1.1;
+    letter-spacing: -1px;
+    background: linear-gradient(135deg, #f1f5f9 30%, var(--accent-cyan) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: fadeDown 0.6s 0.1s ease-out both;
+  }
+
+  .header__sub {
+    font-size: 16px;
+    font-weight: 300;
+    color: var(--text-secondary);
+    margin-top: 16px;
+    letter-spacing: 0.3px;
+    animation: fadeDown 0.6s 0.2s ease-out both;
+  }
+
+  .header__sub strong {
+    color: var(--accent-amber);
+    font-weight: 600;
+  }
+
+  /* --- 구분선 --- */
+  .divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--border), rgba(34,211,238,0.12), var(--border), transparent);
+    margin: 40px 0;
+  }
+
+  /* --- 수업 섹션 --- */
+  .section-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 32px;
+    padding-left: 4px;
+    animation: fadeDown 0.6s 0.3s ease-out both;
+  }
+
+  .section-label span {
+    color: var(--text-secondary);
+  }
+
+  /* --- 수업 카드 그리드 --- */
+  .lessons {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
+    padding-bottom: 100px;
+  }
+
+  .lesson-card {
+    position: relative;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px 24px 24px;
+    text-decoration: none;
+    color: inherit;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: hidden;
+    animation: fadeUp 0.5s ease-out both;
+  }
+
+  .lesson-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--card-accent);
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+
+  .lesson-card:hover {
+    background: var(--bg-card-hover);
+    border-color: rgba(148, 163, 184, 0.12);
+    transform: translateY(-4px);
+    box-shadow: var(--card-glow);
+  }
+
+  .lesson-card:hover::before {
+    opacity: 1;
+  }
+
+  .lesson-card__number {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-muted);
+    letter-spacing: 1px;
+    margin-bottom: 14px;
+  }
+
+  .lesson-card__icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    margin-bottom: 16px;
+    background: var(--icon-bg);
+  }
+
+  .lesson-card__title {
+    font-weight: 700;
+    font-size: 18px;
+    line-height: 1.4;
+    margin-bottom: 8px;
+    color: var(--text-primary);
+  }
+
+  .lesson-card__desc {
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--text-secondary);
+    margin-bottom: 18px;
+  }
+
+  .lesson-card__tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    padding: 3px 10px;
+    border-radius: 100px;
+    background: rgba(148, 163, 184, 0.06);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    letter-spacing: 0.3px;
+  }
+
+  .lesson-card__arrow {
+    position: absolute;
+    top: 28px;
+    right: 24px;
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    background: rgba(148, 163, 184, 0.05);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+    transition: all 0.3s;
+  }
+
+  .lesson-card:hover .lesson-card__arrow {
+    background: rgba(34, 211, 238, 0.1);
+    color: var(--accent-cyan);
+    transform: translateX(3px);
+  }
+
+  /* --- 푸터 --- */
+  .footer {
+    position: relative;
+    z-index: 1;
+    text-align: center;
+    padding: 0 0 60px;
+    font-size: 12px;
+    color: var(--text-muted);
+    letter-spacing: 0.3px;
+  }
+
+  /* --- 애니메이션 --- */
+  @keyframes fadeDown {
+    from { opacity: 0; transform: translateY(-16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  /* --- 반응형 --- */
+  @media (max-width: 640px) {
+    .header { padding: 56px 0 12px; }
+    .lessons { grid-template-columns: 1fr; gap: 14px; }
+    .lesson-card { padding: 22px 20px 20px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="bg-grid"></div>
+<div class="bg-glow bg-glow--cyan"></div>
+<div class="bg-glow bg-glow--violet"></div>
+
+<div class="container">
+  <header class="header">
+    <div class="header__badge">INTERACTIVE SCIENCE LAB</div>
+    <h1 class="header__title">과학 실험실</h1>
+    <p class="header__sub">퀴즈와 실습으로 배우는 <strong>진짜 과학</strong></p>
+  </header>
+
+  <div class="divider"></div>
+
+  <div class="section-label">Lessons <span>// 수업 목록</span></div>
+
+  <div class="lessons" id="lessons"></div>
+</div>
+
+<footer class="footer">
+  과학 실험실 &middot; 퀴즈와 실습으로 배우는 과학 수업
+</footer>
+
+<script>
+  // =============================================
+  //  수업 목록 — 새 수업은 이 배열에 추가하세요
+  // =============================================
+  const lessons = [
+    {
+      id: 1,
+      title: '발열반응과 흡열반응 마스터',
+      desc: '연소, 광합성, 손난로, 냉각팩 등 일상 속 화학 반응을 발열과 흡열로 분류하는 퀴즈 게임',
+      icon: '\uD83D\uDD25',
+      href: 'lesson1.html',
+      accent: '#22d3ee',
+      tags: ['화학', '퀴즈', '랭킹'],
+    },
+    // 새 수업 추가 예시:
+    // {
+    //   id: 2,
+    //   title: '수업 제목',
+    //   desc: '수업 설명',
+    //   icon: '\u26A1',
+    //   href: 'lesson2.html',
+    //   accent: '#34d399',
+    //   tags: ['물리', '실습'],
+    // },
+  ];
+
+  // --- 화살표 SVG (정적 아이콘) ---
+  function createArrowSvg() {
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('width', '14');
+    svg.setAttribute('height', '14');
+    svg.setAttribute('viewBox', '0 0 24 24');
+    svg.setAttribute('fill', 'none');
+    svg.setAttribute('stroke', 'currentColor');
+    svg.setAttribute('stroke-width', '2.5');
+    svg.setAttribute('stroke-linecap', 'round');
+    svg.setAttribute('stroke-linejoin', 'round');
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('d', 'm9 18 6-6-6-6');
+    svg.appendChild(path);
+    return svg;
+  }
+
+  function renderLessons() {
+    const container = document.getElementById('lessons');
+
+    lessons.forEach(function(lesson, idx) {
+      var card = document.createElement('a');
+      card.href = lesson.href;
+      card.className = 'lesson-card';
+      card.style.setProperty('--card-accent', lesson.accent);
+      card.style.setProperty('--card-glow', '0 8px 40px ' + lesson.accent + '15');
+      card.style.setProperty('--icon-bg', lesson.accent + '12');
+      card.style.animationDelay = (0.35 + idx * 0.08) + 's';
+
+      var number = document.createElement('div');
+      number.className = 'lesson-card__number';
+      number.textContent = String(lesson.id).padStart(2, '0');
+      card.appendChild(number);
+
+      var iconDiv = document.createElement('div');
+      iconDiv.className = 'lesson-card__icon';
+      iconDiv.textContent = lesson.icon;
+      card.appendChild(iconDiv);
+
+      var title = document.createElement('div');
+      title.className = 'lesson-card__title';
+      title.textContent = lesson.title;
+      card.appendChild(title);
+
+      var desc = document.createElement('div');
+      desc.className = 'lesson-card__desc';
+      desc.textContent = lesson.desc;
+      card.appendChild(desc);
+
+      var tags = document.createElement('div');
+      tags.className = 'lesson-card__tags';
+      lesson.tags.forEach(function(t) {
+        var tag = document.createElement('span');
+        tag.className = 'tag';
+        tag.textContent = t;
+        tags.appendChild(tag);
+      });
+      card.appendChild(tags);
+
+      var arrow = document.createElement('div');
+      arrow.className = 'lesson-card__arrow';
+      arrow.appendChild(createArrowSvg());
+      card.appendChild(arrow);
+
+      container.appendChild(card);
+    });
+  }
+
+  renderLessons();
+</script>
+
+</body>
+</html>
