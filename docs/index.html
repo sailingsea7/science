@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>인간 염색체 핵형 분석 게임</title>
+    <title>인간 염색체 핵형 분석 랩실</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Tone.js for Sound Effects -->
@@ -13,28 +13,28 @@
         
         body {
             font-family: 'Inter', 'Malgun Gothic', sans-serif;
-            background-color: #0f172a; /* 더 깊은 다크 모드 */
+            background-color: #0f172a;
             color: #f8fafc;
             margin: 0;
             padding: 0;
-            overflow: hidden; /* 전체 스크롤 방지 */
-            touch-action: none; /* iOS 화면 스크롤 바운스 방지 */
+            overflow: hidden;
+            touch-action: none;
         }
 
         #app-container {
             display: flex;
             flex-direction: column;
             height: 100vh;
-            height: 100dvh; /* 모바일 브라우저 주소창 고려 */
+            height: 100dvh;
         }
 
         #karyotype-area {
-            flex: 0.65; /* 화면의 65% 차지 */
+            flex: 0.65;
             padding: 15px;
-            overflow-y: auto; /* 내부 스크롤 허용 */
+            overflow-y: auto;
             background: #0f172a;
             border-bottom: 2px solid #334155;
-            touch-action: pan-y; /* 세로 스크롤 허용 */
+            touch-action: pan-y;
         }
 
         .karyotype-grid {
@@ -54,7 +54,21 @@
             align-items: center;
             justify-content: flex-end;
             position: relative;
-            transition: background-color 0.2s;
+            transition: all 0.2s ease;
+        }
+
+        /* 힌트 애니메이션 클래스 */
+        .hint-active {
+            border-color: #3b82f6 !important;
+            background-color: rgba(59, 130, 246, 0.15) !important;
+            border-style: solid;
+        }
+
+        .hint-close {
+            border-color: #10b981 !important;
+            background-color: rgba(16, 185, 129, 0.3) !important;
+            box-shadow: 0 0 15px rgba(16, 185, 129, 0.5);
+            transform: scale(1.05);
         }
 
         .slot-number {
@@ -71,11 +85,11 @@
             height: 70px;
             align-items: center;
             margin-bottom: 15px;
-            pointer-events: none; /* 자식 요소가 드롭 이벤트를 방해하지 않게 함 */
+            pointer-events: none;
         }
 
         #pool-area {
-            flex: 0.35; /* 화면의 35% 차지 */
+            flex: 0.35;
             background: #1e293b;
             padding: 15px;
             overflow-y: auto;
@@ -84,7 +98,7 @@
             gap: 10px;
             justify-content: center;
             align-content: flex-start;
-            touch-action: pan-y; /* 세로 스크롤 허용 */
+            touch-action: pan-y;
         }
 
         .chromosome {
@@ -94,7 +108,7 @@
             flex-direction: column;
             align-items: center;
             filter: drop-shadow(0 2px 3px rgba(0,0,0,0.6));
-            touch-action: none; /* 드래그 중 스크롤 방지 */
+            touch-action: none;
             transition: opacity 0.2s;
         }
 
@@ -106,15 +120,8 @@
             position: relative;
         }
 
-        .p-arm {
-            border-bottom-left-radius: 3px;
-            border-bottom-right-radius: 3px;
-        }
-
-        .q-arm {
-            border-top-left-radius: 3px;
-            border-top-right-radius: 3px;
-        }
+        .p-arm { border-bottom-left-radius: 3px; border-bottom-right-radius: 3px; }
+        .q-arm { border-top-left-radius: 3px; border-top-right-radius: 3px; }
 
         .centromere {
             width: 8px;
@@ -138,7 +145,7 @@
             100% { transform: translateX(0); }
         }
 
-        /* 시작 모달 오버레이 */
+        /* 모달 오버레이 */
         #start-overlay, #end-modal {
             position: fixed;
             inset: 0;
@@ -154,19 +161,25 @@
 </head>
 <body>
 
+    <!-- 시작 모달 (성별 선택) -->
     <div id="start-overlay">
         <div class="bg-gray-800 p-8 rounded-3xl shadow-2xl text-center max-w-sm w-full mx-4 border border-gray-700">
             <div class="text-6xl mb-4">🔬</div>
             <h1 class="text-2xl font-bold text-blue-400 mb-2">핵형 분석 랩실</h1>
-            <p class="text-gray-300 mb-6 text-sm">흩어진 염색체를 드래그하여<br>자신의 번호에 맞게 짝을 맞춰주세요.</p>
-            <button id="start-btn" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 px-6 rounded-xl text-lg shadow-[0_0_15px_rgba(37,99,235,0.5)] transition duration-200">
-                실험 시작하기
-            </button>
+            <p class="text-gray-300 mb-6 text-sm">분석할 대상을 선택해 주세요.<br><span class="text-xs text-gray-500">(염색체를 누르면 힌트가 나타납니다)</span></p>
+            <div class="flex gap-4">
+                <button onclick="startGame('XY')" class="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 rounded-xl text-lg shadow-[0_0_15px_rgba(37,99,235,0.5)] transition duration-200">
+                    남성 (XY)
+                </button>
+                <button onclick="startGame('XX')" class="flex-1 bg-pink-600 hover:bg-pink-500 text-white font-bold py-4 rounded-xl text-lg shadow-[0_0_15px_rgba(219,39,119,0.5)] transition duration-200">
+                    여성 (XX)
+                </button>
+            </div>
         </div>
     </div>
 
+    <!-- 메인 게임 영역 -->
     <div id="app-container">
-        <!-- 상단 헤더 -->
         <header class="h-[60px] bg-slate-900 flex justify-between items-center px-4 shrink-0 border-b border-slate-700 shadow-md">
             <div>
                 <h1 class="text-base font-bold text-blue-400">🧬 핵형 분석 랩실</h1>
@@ -180,7 +193,7 @@
         <div id="karyotype-area">
             <div class="mb-3 text-sm font-semibold text-slate-400 flex justify-between items-center">
                 <span>핵형 배치도 (1~23번)</span>
-                <span class="text-xs bg-slate-800 px-2 py-1 rounded-md border border-slate-700">여성 (46, XX)</span>
+                <span id="gender-badge" class="text-xs bg-slate-800 px-2 py-1 rounded-md border border-slate-700">-</span>
             </div>
             <div id="karyotype-grid" class="karyotype-grid">
                 <!-- JS에서 23개 슬롯 생성 -->
@@ -203,7 +216,7 @@
                 <span id="final-time" class="text-3xl font-mono font-bold text-yellow-400">00:00.00</span>
             </div>
             <button onclick="location.reload()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 px-4 rounded-xl transition duration-200">
-                다시 도전하기
+                새로운 환자 분석하기
             </button>
         </div>
     </div>
@@ -235,7 +248,7 @@
             }
         }
 
-        // height: 기준 크기, centromere: 동원체 위치(0.1=끝부분, 0.5=정중앙)
+        // 염색체 데이터 (1~22번, 23번 X, 24번 Y)
         const chrData = [
             { id: 1, height: 75, centromere: 0.48 }, { id: 2, height: 72, centromere: 0.39 }, { id: 3, height: 65, centromere: 0.46 },
             { id: 4, height: 60, centromere: 0.28 }, { id: 5, height: 58, centromere: 0.28 }, { id: 6, height: 55, centromere: 0.35 },
@@ -244,21 +257,23 @@
             { id: 13, height: 40, centromere: 0.15 }, { id: 14, height: 38, centromere: 0.15 }, { id: 15, height: 36, centromere: 0.15 },
             { id: 16, height: 34, centromere: 0.40 }, { id: 17, height: 32, centromere: 0.32 }, { id: 18, height: 30, centromere: 0.28 },
             { id: 19, height: 26, centromere: 0.45 }, { id: 20, height: 25, centromere: 0.42 }, { id: 21, height: 21, centromere: 0.15 },
-            { id: 22, height: 20, centromere: 0.15 }, { id: 23, height: 55, centromere: 0.40 } // X 염색체
+            { id: 22, height: 20, centromere: 0.15 }, 
+            { id: 23, height: 55, centromere: 0.40 }, // X 염색체
+            { id: 24, height: 18, centromere: 0.15 }  // Y 염색체 (아주 작음)
         ];
 
         let matchedChromosomes = 0;
         let startTime = null;
         let timerInterval = null;
         let isPlaying = false;
+        let currentGender = 'XX';
 
         function generateBands(id, armLength) {
             const numBands = Math.max(1, Math.floor(armLength / 5));
             let stops = [];
             for (let i = 0; i < numBands; i++) {
-                // 고유한 패턴 생성을 위해 id 활용
                 const isDark = (id * 17 + i * 23) % 3 === 0;
-                const color = isDark ? '#475569' : '#e2e8f0'; // 어두운 띠와 밝은 띠
+                const color = isDark ? '#475569' : '#e2e8f0'; 
                 stops.push(`${color} ${(i/numBands)*100}%`, `${color} ${((i+1)/numBands)*100}%`);
             }
             return `linear-gradient(to bottom, ${stops.join(', ')})`;
@@ -289,15 +304,28 @@
             chr.appendChild(centromere);
             chr.appendChild(qArm);
 
-            // 터치 및 마우스 이벤트 연결
             chr.addEventListener('mousedown', onPointerDown);
             chr.addEventListener('touchstart', onPointerDown, { passive: false });
             return chr;
         }
 
+        async function startGame(gender) {
+            await Tone.start(); 
+            initAudio();
+            currentGender = gender;
+            
+            document.getElementById('start-overlay').style.display = 'none';
+            document.getElementById('gender-badge').innerText = gender === 'XY' ? '남성 (46, XY)' : '여성 (46, XX)';
+            
+            setupGame();
+            isPlaying = true;
+        }
+
         function setupGame() {
             const karyotypeGrid = document.getElementById('karyotype-grid');
             const poolArea = document.getElementById('pool-area');
+            karyotypeGrid.innerHTML = '';
+            poolArea.innerHTML = '';
             let pool = [];
 
             // 1. 슬롯 23개 생성
@@ -311,28 +339,37 @@
                 
                 const label = document.createElement('span');
                 label.className = 'slot-number';
-                label.innerText = i === 23 ? '23 (XX)' : i;
+                label.innerText = i === 23 ? (currentGender === 'XY' ? '23 (XY)' : '23 (XX)') : i;
 
                 slot.appendChild(slotChrs);
                 slot.appendChild(label);
                 karyotypeGrid.appendChild(slot);
             }
 
-            // 2. 상동 염색체 생성 (46개)
-            chrData.forEach(data => {
-                pool.push(createChromosomeDOM(data)); // 쌍 1
-                pool.push(createChromosomeDOM(data)); // 쌍 2
-            });
+            // 2. 상염색체 생성 (1~22번, 쌍으로)
+            for(let i=0; i<22; i++) {
+                pool.push(createChromosomeDOM(chrData[i])); 
+                pool.push(createChromosomeDOM(chrData[i]));
+            }
 
-            // 3. 셔플 알고리즘
+            // 3. 성염색체 생성
+            if (currentGender === 'XX') {
+                pool.push(createChromosomeDOM(chrData[22])); // X
+                pool.push(createChromosomeDOM(chrData[22])); // X
+            } else {
+                pool.push(createChromosomeDOM(chrData[22])); // X
+                pool.push(createChromosomeDOM(chrData[23])); // Y
+            }
+
+            // 4. 셔플 알고리즘
             for (let i = pool.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
                 [pool[i], pool[j]] = [pool[j], pool[i]];
             }
 
-            // 4. 풀 영역에 흩뿌리기
+            // 5. 흩뿌리기
             pool.forEach(chr => {
-                const rot = (Math.random() - 0.5) * 40; // 약간씩 회전
+                const rot = (Math.random() - 0.5) * 40; 
                 chr.style.transform = `rotate(${rot}deg)`;
                 poolArea.appendChild(chr);
             });
@@ -351,22 +388,29 @@
         }
 
         let activeEl = null;
+        let currentTargetSlot = null; // 힌트를 줄 슬롯
         let startX, startY;
         let transformOffsetX = 0, transformOffsetY = 0;
 
         function onPointerDown(e) {
             if (!isPlaying) return;
-            
             const target = e.currentTarget;
-            // 이미 슬롯에 들어간 염색체는 드래그 불가
             if (target.parentElement.classList.contains('slot-chromosomes')) return;
 
-            e.preventDefault(); // 스크롤 등 기본 동작 방지
+            e.preventDefault(); 
             activeEl = target;
             playSound('pickup');
             startTimer();
 
-            // 좌표 추출
+            // 대상 칸 찾기 및 클릭 힌트 표시
+            // Y염색체(id:24)의 정답 칸은 23번
+            const expectedSlotId = activeEl.dataset.id == 24 ? 23 : activeEl.dataset.id;
+            currentTargetSlot = document.querySelector(`.karyotype-slot[data-slot-id="${expectedSlotId}"]`);
+            
+            if(currentTargetSlot) {
+                currentTargetSlot.classList.add('hint-active');
+            }
+
             const clientX = e.touches ? e.touches[0].clientX : e.clientX;
             const clientY = e.touches ? e.touches[0].clientY : e.clientY;
             startX = clientX;
@@ -374,7 +418,6 @@
             transformOffsetX = 0;
             transformOffsetY = 0;
 
-            // 요소를 Body로 이동시켜 드래그 시 겹침 현상 방지
             const rect = activeEl.getBoundingClientRect();
             activeEl.style.width = rect.width + 'px';
             activeEl.style.height = rect.height + 'px';
@@ -382,8 +425,8 @@
             activeEl.style.left = rect.left + 'px';
             activeEl.style.top = rect.top + 'px';
             activeEl.style.zIndex = '9999';
-            activeEl.style.pointerEvents = 'none'; // 중요: 마우스 아래의 요소를 감지하기 위해 설정
-            activeEl.style.transform = 'scale(1.2) rotate(0deg)'; // 들린 효과
+            activeEl.style.pointerEvents = 'none'; 
+            activeEl.style.transform = 'scale(1.2) rotate(0deg)'; 
             activeEl.style.filter = 'drop-shadow(0 10px 15px rgba(0,0,0,0.5)) brightness(1.2)';
             
             document.body.appendChild(activeEl);
@@ -405,29 +448,55 @@
             transformOffsetY = clientY - startY;
             
             activeEl.style.transform = `translate(${transformOffsetX}px, ${transformOffsetY}px) scale(1.2)`;
+
+            // 근접 힌트 로직 (중심점 거리 계산)
+            if (currentTargetSlot) {
+                const elRect = activeEl.getBoundingClientRect();
+                const slotRect = currentTargetSlot.getBoundingClientRect();
+                
+                const elCenterX = elRect.left + elRect.width / 2;
+                const elCenterY = elRect.top + elRect.height / 2;
+                const slotCenterX = slotRect.left + slotRect.width / 2;
+                const slotCenterY = slotRect.top + slotRect.height / 2;
+
+                const distance = Math.sqrt(Math.pow(elCenterX - slotCenterX, 2) + Math.pow(elCenterY - slotCenterY, 2));
+
+                // 거리가 70px 이내면 더 강한 힌트(초록색 발광) 표시
+                if (distance < 70) {
+                    currentTargetSlot.classList.add('hint-close');
+                } else {
+                    currentTargetSlot.classList.remove('hint-close');
+                }
+            }
         }
 
         function onPointerUp(e) {
             if (!activeEl) return;
             
+            // 힌트 스타일 제거
+            if (currentTargetSlot) {
+                currentTargetSlot.classList.remove('hint-active', 'hint-close');
+                currentTargetSlot = null;
+            }
+
             const clientX = e.changedTouches ? e.changedTouches[0].clientX : e.clientX;
             const clientY = e.changedTouches ? e.changedTouches[0].clientY : e.clientY;
             
-            // 드롭된 위치 아래에 있는 요소 찾기 (activeEl은 pointer-events:none 이라 무시됨)
             const dropTarget = document.elementFromPoint(clientX, clientY);
             const slot = dropTarget ? dropTarget.closest('.karyotype-slot') : null;
             
-            activeEl.style.pointerEvents = 'auto'; // 복구
+            activeEl.style.pointerEvents = 'auto'; 
             activeEl.style.filter = 'drop-shadow(0 2px 3px rgba(0,0,0,0.6))';
 
             if (slot) {
                 const targetId = slot.dataset.slotId;
                 const chrId = activeEl.dataset.id;
                 
-                // 슬롯 내에 이미 염색체가 2개 있는지 확인
+                // 타겟 ID 계산 (24번 Y염색체는 23번 슬롯이 정답)
+                const expectedTargetId = chrId == 24 ? 23 : chrId;
                 const slotChrs = slot.querySelector('.slot-chromosomes');
-                if (targetId === chrId && slotChrs.children.length < 2) {
-                    // 정답! 슬롯에 삽입
+
+                if (targetId == expectedTargetId && slotChrs.children.length < 2) {
                     playSound('drop');
                     resetElementStyle(activeEl);
                     slotChrs.appendChild(activeEl);
@@ -439,17 +508,14 @@
                         endGame();
                     }
                 } else {
-                    // 틀린 슬롯이거나 꽉 찬 슬롯
                     playSound('error');
                     returnToPool(activeEl);
                 }
             } else {
-                // 빈 공간에 드롭
                 playSound('error');
                 returnToPool(activeEl);
             }
 
-            // 리스너 해제
             document.removeEventListener('mousemove', onPointerMove);
             document.removeEventListener('touchmove', onPointerMove);
             document.removeEventListener('mouseup', onPointerUp);
@@ -471,7 +537,6 @@
             el.style.transform = `rotate(${rot}deg)`;
             document.getElementById('pool-area').appendChild(el);
             
-            // 틀렸을 때 흔들리는 효과
             el.classList.add('wrong-match');
             setTimeout(() => el.classList.remove('wrong-match'), 400);
         }
@@ -485,16 +550,6 @@
                 document.getElementById('end-modal').style.display = 'flex';
             }, 500);
         }
-
-        // 시작 버튼 이벤트
-        document.getElementById('start-btn').addEventListener('click', async () => {
-            await Tone.start(); // Tone.js 오디오 컨텍스트 시작 허용
-            initAudio();
-            document.getElementById('start-overlay').style.display = 'none';
-            setupGame();
-            isPlaying = true;
-        });
-
     </script>
 </body>
 </html>
