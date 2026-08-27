@@ -3,78 +3,395 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>상동 염색체 짝 맞추기</title>
+    <title>인간 염색체 핵형 분석 게임</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { font-family: 'Malgun Gothic', sans-serif; text-align: center; background-color: #f4f7f6; margin: 0; padding: 20px; }
-        h2 { color: #333; }
-        #timer { font-size: 24px; font-weight: bold; color: #d9534f; margin-bottom: 15px; }
-        #board { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; max-width: 400px; margin: 0 auto; }
-        .chromosome { width: 100%; aspect-ratio: 1 / 2; border-radius: 20px; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: all 0.2s ease; position: relative; }
-        .chromosome::after { content: ""; position: absolute; top: 50%; left: 0; width: 100%; height: 4px; background-color: rgba(255,255,255,0.6); transform: translateY(-50%); }
-        .selected { transform: scale(1.1); box-shadow: 0 0 15px rgba(0, 0, 0, 0.5); border: 3px solid #333; }
-        .matched { visibility: hidden; opacity: 0; }
-        #result { display: none; margin-top: 30px; padding: 20px; background-color: #dff0d8; border: 2px solid #3c763d; border-radius: 10px; color: #3c763d; font-size: 20px; font-weight: bold; }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
+        
+        body {
+            font-family: 'Inter', 'Malgun Gothic', sans-serif;
+            background-color: #111827; /* 다크 모드 배경 */
+            color: #f3f4f6;
+            margin: 0;
+            padding: 0;
+            overflow: hidden; /* 전체 스크롤 방지, 내부 영역만 스크롤 */
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        #game-container {
+            display: flex;
+            flex-direction: column;
+            height: calc(100vh - 70px);
+        }
+
+        #pool-area {
+            flex: 0.4;
+            background: #1f2937;
+            border-bottom: 2px solid #374151;
+            padding: 15px;
+            overflow-y: auto;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            align-content: flex-start;
+            position: relative;
+        }
+
+        #karyotype-area {
+            flex: 0.6;
+            padding: 15px;
+            overflow-y: auto;
+            background: #111827;
+        }
+
+        .chromosome {
+            width: 22px;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transition: transform 0.2s, filter 0.2s, box-shadow 0.2s;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+            border-radius: 10px;
+        }
+
+        .chromosome:active {
+            transform: scale(0.95);
+        }
+
+        .selected {
+            filter: drop-shadow(0 0 8px #3b82f6) brightness(1.2);
+            transform: translateY(-5px);
+            z-index: 10;
+        }
+
+        .chr-arm {
+            width: 16px;
+            border-radius: 8px;
+            background-color: #cbd5e1;
+            /* 띠 무늬는 JS에서 인라인 스타일로 주입 */
+        }
+
+        .p-arm {
+            border-bottom-left-radius: 4px;
+            border-bottom-right-radius: 4px;
+        }
+
+        .q-arm {
+            border-top-left-radius: 4px;
+            border-top-right-radius: 4px;
+        }
+
+        .centromere {
+            width: 10px;
+            height: 4px;
+            background-color: #94a3b8;
+            border-radius: 2px;
+            margin: 1px 0;
+        }
+
+        .karyotype-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(65px, 1fr));
+            gap: 15px;
+            padding-bottom: 30px;
+        }
+
+        .karyotype-slot {
+            background: #1f2937;
+            border: 1px dashed #4b5563;
+            border-radius: 8px;
+            height: 100px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-end;
+            position: relative;
+        }
+
+        .slot-number {
+            position: absolute;
+            bottom: 4px;
+            font-size: 0.75rem;
+            color: #9ca3af;
+            font-weight: 600;
+        }
+
+        .slot-chromosomes {
+            display: flex;
+            gap: 4px;
+            height: 80px;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        /* 애니메이션 효과 */
+        .wrong-match {
+            animation: shake 0.4s;
+            filter: drop-shadow(0 0 8px #ef4444) brightness(1.2);
+        }
+
+        @keyframes shake {
+            0% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            50% { transform: translateX(5px); }
+            75% { transform: translateX(-5px); }
+            100% { transform: translateX(0); }
+        }
+        
+        .fade-in { animation: fadeIn 0.5s forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.8); } to { opacity: 1; transform: scale(1); } }
+
+        /* 모달 스타일 */
+        #modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.8);
+            z-index: 50;
+            align-items: center;
+            justify-content: center;
+        }
     </style>
 </head>
 <body>
-    <h2>🧬 상동 염색체 짝 맞추기</h2>
-    <div id="timer">0.00초</div>
-    <div id="board"></div>
-    <div id="result"></div>
-    <script>
-        const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEEAD', '#D4A5A5'];
-        let chromosomes = [...colors, ...colors];
-        let selectedElement = null, matchedCount = 0, startTime = null, timerInterval = null, isPlaying = false;
+
+    <header class="h-[70px] bg-gray-900 border-b border-gray-800 flex justify-between items-center px-4 shadow-lg shrink-0">
+        <div>
+            <h1 class="text-lg font-bold text-blue-400">🧬 핵형 분석 랩실</h1>
+            <p class="text-xs text-gray-400">상동 염색체 짝을 찾아 클릭하세요 (23쌍)</p>
+        </div>
+        <div class="text-right">
+            <div id="timer" class="text-xl font-mono font-bold text-yellow-400">00:00.00</div>
+            <div id="progress" class="text-sm font-semibold text-green-400">진행: 0 / 23 쌍</div>
+        </div>
+    </header>
+
+    <div id="game-container">
+        <!-- 흩어진 염색체들이 있는 풀 -->
+        <div id="pool-area"></div>
         
-        function shuffle(array) {
-            for (let i = array.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [array[i], array[j]] = [array[j], array[i]];
+        <!-- 완성해 나갈 핵형 지도 -->
+        <div id="karyotype-area">
+            <div class="mb-3 text-sm font-semibold text-gray-400 flex justify-between items-center">
+                <span>핵형 배치도 (Karyotype Chart)</span>
+                <span class="text-xs bg-gray-800 px-2 py-1 rounded">성염색체: XX (여성)</span>
+            </div>
+            <div id="karyotype-grid" class="karyotype-grid">
+                <!-- JS로 23개의 슬롯 생성 -->
+            </div>
+        </div>
+    </div>
+
+    <div id="modal" class="flex">
+        <div class="bg-gray-800 p-8 rounded-2xl shadow-2xl text-center max-w-sm w-full mx-4 border border-gray-700">
+            <div class="text-5xl mb-4">🎉</div>
+            <h2 class="text-2xl font-bold text-white mb-2">핵형 분석 완료!</h2>
+            <p class="text-gray-400 mb-6">모든 상동 염색체의 짝을 맞췄습니다.</p>
+            <div class="bg-gray-900 rounded-lg p-4 mb-6">
+                <span class="block text-sm text-gray-500 mb-1">최종 기록</span>
+                <span id="final-time" class="text-3xl font-mono font-bold text-yellow-400">00:00.00</span>
+            </div>
+            <button onclick="location.reload()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-xl transition duration-200">
+                다시 도전하기
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // 23쌍의 염색체 특성 정의 (크기 비율, 동원체 위치, 띠무늬 패턴 생성용 시드)
+        const chrData = [
+            { id: 1, height: 75, centromere: 0.5 }, { id: 2, height: 72, centromere: 0.4 }, { id: 3, height: 68, centromere: 0.45 },
+            { id: 4, height: 65, centromere: 0.3 }, { id: 5, height: 62, centromere: 0.3 }, { id: 6, height: 58, centromere: 0.35 },
+            { id: 7, height: 55, centromere: 0.4 }, { id: 8, height: 53, centromere: 0.4 }, { id: 9, height: 51, centromere: 0.35 },
+            { id: 10, height: 49, centromere: 0.3 }, { id: 11, height: 47, centromere: 0.4 }, { id: 12, height: 46, centromere: 0.3 },
+            { id: 13, height: 43, centromere: 0.15 }, { id: 14, height: 41, centromere: 0.15 }, { id: 15, height: 39, centromere: 0.15 },
+            { id: 16, height: 36, centromere: 0.4 }, { id: 17, height: 34, centromere: 0.3 }, { id: 18, height: 32, centromere: 0.3 },
+            { id: 19, height: 28, centromere: 0.45 }, { id: 20, height: 26, centromere: 0.45 }, { id: 21, height: 23, centromere: 0.15 },
+            { id: 22, height: 21, centromere: 0.15 }, { id: 23, height: 58, centromere: 0.4 } // X 염색체 (여성 XX 기준)
+        ];
+
+        let pool = [];
+        let selectedElement = null;
+        let matchedPairs = 0;
+        let startTime = null;
+        let timerInterval = null;
+
+        // 고유한 띠 무늬 생성 함수 (가짜 G-banding 효과)
+        function generateBands(id, armLength) {
+            // ID를 기반으로 규칙적이되 서로 다른 띠 생성
+            const numBands = Math.max(1, Math.floor(armLength / 6));
+            let stops = [];
+            for (let i = 0; i < numBands; i++) {
+                const isDark = (id * i + i) % 3 === 0;
+                const color = isDark ? '#475569' : '#e2e8f0'; // 짙은회색 or 밝은회색
+                stops.push(`${color} ${(i/numBands)*100}%`, `${color} ${((i+1)/numBands)*100}%`);
             }
+            return `linear-gradient(to bottom, ${stops.join(', ')})`;
         }
-        function updateTimer() {
-            document.getElementById('timer').innerText = ((new Date() - startTime) / 1000).toFixed(2) + '초';
+
+        // 염색체 DOM 요소 생성
+        function createChromosomeDOM(data, instanceId) {
+            const chr = document.createElement('div');
+            chr.className = 'chromosome';
+            chr.dataset.id = data.id;
+            chr.dataset.instanceId = instanceId; // 동일 쌍 구분을 위한 ID (0 or 1)
+
+            const pArmHeight = data.height * data.centromere;
+            const qArmHeight = data.height * (1 - data.centromere);
+
+            const pArm = document.createElement('div');
+            pArm.className = 'chr-arm p-arm';
+            pArm.style.height = `${pArmHeight}px`;
+            pArm.style.background = generateBands(data.id + 100, pArmHeight); // p암 띠
+
+            const centromere = document.createElement('div');
+            centromere.className = 'centromere';
+
+            const qArm = document.createElement('div');
+            qArm.className = 'chr-arm q-arm';
+            qArm.style.height = `${qArmHeight}px`;
+            qArm.style.background = generateBands(data.id, qArmHeight); // q암 띠
+
+            chr.appendChild(pArm);
+            chr.appendChild(centromere);
+            chr.appendChild(qArm);
+
+            // 클릭 이벤트
+            chr.addEventListener('click', () => handleSelect(chr));
+            return chr;
         }
+
         function initGame() {
-            shuffle(chromosomes);
-            const board = document.getElementById('board');
-            board.innerHTML = '';
-            chromosomes.forEach((color, index) => {
-                const div = document.createElement('div');
-                div.classList.add('chromosome');
-                div.style.backgroundColor = color;
-                div.dataset.color = color;
-                div.addEventListener('click', () => handleSelect(div));
-                board.appendChild(div);
+            const poolArea = document.getElementById('pool-area');
+            const karyotypeGrid = document.getElementById('karyotype-grid');
+
+            // 1. 슬롯 생성 (1~23번)
+            for (let i = 1; i <= 23; i++) {
+                const slot = document.createElement('div');
+                slot.className = 'karyotype-slot';
+                slot.id = `slot-${i}`;
+                
+                const slotChrs = document.createElement('div');
+                slotChrs.className = 'slot-chromosomes';
+                slotChrs.id = `slot-chrs-${i}`;
+                
+                const label = document.createElement('span');
+                label.className = 'slot-number';
+                label.innerText = i === 23 ? '23 (XX)' : i;
+
+                slot.appendChild(slotChrs);
+                slot.appendChild(label);
+                karyotypeGrid.appendChild(slot);
+            }
+
+            // 2. 46개 염색체 생성 및 셔플
+            chrData.forEach(data => {
+                pool.push(createChromosomeDOM(data, 0)); // 첫 번째 상동
+                pool.push(createChromosomeDOM(data, 1)); // 두 번째 상동
+            });
+
+            // Fisher-Yates Shuffle
+            for (let i = pool.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [pool[i], pool[j]] = [pool[j], pool[i]];
+            }
+
+            // 풀 영역에 추가
+            pool.forEach((chr, i) => {
+                // 약간의 랜덤 회전을 주어 흩어진 느낌 강조 (모바일 고려 각도 최소화)
+                const rot = (Math.random() - 0.5) * 20; 
+                chr.style.transform = `rotate(${rot}deg)`;
+                poolArea.appendChild(chr);
+                
+                // 애니메이션 딜레이
+                chr.classList.add('fade-in');
+                chr.style.animationDelay = `${i * 0.02}s`;
             });
         }
+
+        function updateTimer() {
+            const now = new Date();
+            const diff = now - startTime;
+            const minutes = String(Math.floor(diff / 60000)).padStart(2, '0');
+            const seconds = String(Math.floor((diff % 60000) / 1000)).padStart(2, '0');
+            const ms = String(Math.floor((diff % 1000) / 10)).padStart(2, '0');
+            document.getElementById('timer').innerText = `${minutes}:${seconds}.${ms}`;
+        }
+
         function handleSelect(element) {
-            if (element.classList.contains('matched') || element === selectedElement) return;
-            if (!isPlaying) { isPlaying = true; startTime = new Date(); timerInterval = setInterval(updateTimer, 10); }
-            element.classList.add('selected');
+            // 이미 매칭되었거나 자기 자신을 다시 누른 경우 무시
+            if (element.parentElement.id.includes('slot') || element === selectedElement) return;
+
+            // 타이머 시작
+            if (!startTime) {
+                startTime = new Date();
+                timerInterval = setInterval(updateTimer, 10);
+            }
+
             if (!selectedElement) {
+                // 첫 번째 선택
                 selectedElement = element;
+                element.classList.add('selected');
+                element.style.transform = 'scale(1.1) translateY(-5px) rotate(0deg)'; // 회전 초기화 및 강조
             } else {
-                if (selectedElement.dataset.color === element.dataset.color) {
-                    const el1 = selectedElement, el2 = element;
-                    setTimeout(() => { el1.classList.add('matched'); el2.classList.add('matched'); matchedCount += 2; checkWin(); }, 300);
+                // 두 번째 선택
+                const first = selectedElement;
+                const second = element;
+                second.classList.add('selected');
+                second.style.transform = 'scale(1.1) translateY(-5px) rotate(0deg)';
+
+                const isMatch = first.dataset.id === second.dataset.id;
+
+                if (isMatch) {
+                    // 매칭 성공!
+                    setTimeout(() => {
+                        first.classList.remove('selected');
+                        second.classList.remove('selected');
+                        
+                        // 핵형 슬롯으로 이동
+                        const targetSlot = document.getElementById(`slot-chrs-${first.dataset.id}`);
+                        first.style.transform = 'none';
+                        second.style.transform = 'none';
+                        targetSlot.appendChild(first);
+                        targetSlot.appendChild(second);
+
+                        matchedPairs++;
+                        document.getElementById('progress').innerText = `진행: ${matchedPairs} / 23 쌍`;
+                        checkWin();
+                    }, 300); // 0.3초 대기 후 이동
                 } else {
-                    const el1 = selectedElement, el2 = element;
-                    setTimeout(() => { el1.classList.remove('selected'); el2.classList.remove('selected'); }, 500);
+                    // 매칭 실패 (흔들기 애니메이션 후 선택 해제)
+                    first.classList.add('wrong-match');
+                    second.classList.add('wrong-match');
+                    
+                    setTimeout(() => {
+                        first.classList.remove('selected', 'wrong-match');
+                        second.classList.remove('selected', 'wrong-match');
+                        // 원래의 약간 회전된 상태 복구는 생략 (편의성)
+                    }, 500);
                 }
-                selectedElement = null;
+                selectedElement = null; // 초기화
             }
         }
+
         function checkWin() {
-            if (matchedCount === chromosomes.length) {
+            if (matchedPairs === 23) {
                 clearInterval(timerInterval);
-                const resultDiv = document.getElementById('result');
-                resultDiv.style.display = 'block';
-                resultDiv.innerHTML = `🎉 성공! <br>기록: ${document.getElementById('timer').innerText} <br>선생님께 화면을 보여주세요!`;
-                document.getElementById('board').style.display = 'none';
+                const finalTimeStr = document.getElementById('timer').innerText;
+                
+                setTimeout(() => {
+                    document.getElementById('modal').style.display = 'flex';
+                    document.getElementById('final-time').innerText = finalTimeStr;
+                }, 500); // 전부 들어간 후 모달 표시
             }
         }
-        initGame();
+
+        // 페이지 로드 시 게임 시작
+        window.onload = initGame;
     </script>
 </body>
 </html>
