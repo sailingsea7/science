@@ -55,11 +55,21 @@
 <body class="flex flex-col min-h-screen p-2 md:p-4 max-w-lg mx-auto w-full relative">
 
     <div id="intro-screen" class="absolute inset-0 z-50 bg-emerald-50 flex flex-col p-4 overflow-y-auto">
-        <div class="text-center mt-6 mb-8">
+        <div class="text-center mt-6 mb-4">
             <h1 class="text-3xl font-black text-emerald-800 mb-2">👨‍🌾 스마트팜 타임어택</h1>
             <p class="text-sm text-emerald-700 font-medium bg-emerald-100 py-2 rounded-lg inline-block px-4">
-                제한시간 10분! 돌발 날씨를 이겨내고 부자가 되세요!
+                제한시간을 설정하고 돌발 날씨를 이겨내 부자가 되세요!
             </p>
+        </div>
+
+        <!-- ★ NEW: 제한 시간 설정 UI -->
+        <div class="bg-white p-4 rounded-2xl shadow-sm border-2 border-indigo-100 mb-6 flex flex-col items-center">
+            <label for="time-setting" class="font-bold text-indigo-800 mb-2">⏱️ 제한 시간 설정 (분)</label>
+            <div class="flex items-center gap-2">
+                <input type="number" id="time-setting" min="1" max="60" value="10" class="w-16 text-center text-xl font-black text-indigo-600 border-b-2 border-indigo-300 focus:outline-none focus:border-indigo-500 bg-transparent">
+                <span class="text-indigo-600 font-bold">분</span>
+            </div>
+            <p class="text-[10px] text-gray-500 mt-1">1분 ~ 60분 사이로 설정해 보세요!</p>
         </div>
 
         <h2 class="text-lg font-bold text-gray-800 mb-3 px-2">🌱 재배할 작물을 선택하세요</h2>
@@ -148,6 +158,10 @@
                         <div class="flex justify-between items-center text-rose-600 border-b border-gray-200 pb-2">
                             <span>🔥 냉난방비</span> <span id="receipt-temp" class="font-bold">0원</span>
                         </div>
+                        <!-- ★ NEW: 파산 시 버틴 시간 표시 -->
+                        <div class="flex justify-between items-center text-gray-500 pt-2 text-xs font-bold">
+                            <span>⏱️ 버틴 시간</span> <span id="receipt-playtime" class="text-indigo-500">0분 0초</span>
+                        </div>
                     </div>
                     <div class="bg-gray-100 p-3 rounded-lg text-xs text-left leading-relaxed text-gray-700">
                         <p class="font-bold text-rose-500 mb-1">🚨 파산 사유 분석</p>
@@ -171,6 +185,11 @@
                     <div class="flex justify-between items-center text-sm font-medium">
                         <span class="text-indigo-200">총 수확량</span>
                         <span id="final-harvest" class="font-bold text-xl text-white">0박스</span>
+                    </div>
+                    <!-- ★ NEW: 성공 시 운영 시간 표시 -->
+                    <div class="flex justify-between items-center text-sm font-medium mt-2">
+                        <span class="text-indigo-200">운영 시간</span>
+                        <span id="final-playtime" class="font-bold text-xl text-white">0분 0초</span>
                     </div>
                     <div class="mt-4 pt-4 border-t border-white/20 text-center">
                         <p class="text-sm text-indigo-300 font-bold mb-1">경영 평가</p>
@@ -330,6 +349,7 @@
         
         // 시간 관련 변수
         let timeLeft = 600; // 10분 = 600초
+        let initialTimeSetting = 600; // 설정한 전체 시간 저장용
         let gameTimerInterval;
         let eventTimerInterval;
         let animationId;
@@ -339,7 +359,13 @@
         window.startGame = function(cropId) {
             currentCropId = cropId; activeCrop = CROP_DATA[cropId];
             
-            money = 10000; harvestCount = 0; plantGrowth = 0; timeLeft = 600;
+            // ★ 타임 세팅 읽어오기
+            let timeInput = parseInt(document.getElementById('time-setting').value);
+            if (isNaN(timeInput) || timeInput < 1) timeInput = 1;
+            if (timeInput > 60) timeInput = 60;
+            initialTimeSetting = timeInput * 60;
+            
+            money = 10000; harvestCount = 0; plantGrowth = 0; timeLeft = initialTimeSetting;
             isReadyToHarvest = false; isGameOver = false; isPlaying = true;
             
             ui.light.value = 40; ui.co2.value = 40; ui.temp.value = 25;
@@ -356,7 +382,7 @@
             simulationScreen.classList.add('flex');
             
             resizeCanvas(); 
-            showToast(`${activeCrop.name} 재배 시작! 제한시간 10분입니다.`, 'info');
+            showToast(`${activeCrop.name} 재배 시작! 제한시간 ${timeInput}분입니다.`, 'info');
             
             // 타이머 시작 (1초마다)
             if(gameTimerInterval) clearInterval(gameTimerInterval);
@@ -425,8 +451,14 @@
             isGameOver = true; isPlaying = false;
             clearInterval(gameTimerInterval); clearTimeout(eventTimerInterval);
             
+            // ★ 운영 시간 계산
+            let playedTime = initialTimeSetting - Math.max(0, timeLeft);
+            let pMins = Math.floor(playedTime / 60);
+            let pSecs = playedTime % 60;
+            
             ui.finalMoney.innerText = `${Math.floor(money).toLocaleString()}원`;
             ui.finalHarvest.innerText = `${harvestCount}박스`;
+            document.getElementById('final-playtime').innerText = `${pMins}분 ${pSecs}초`;
             
             let rank = "";
             if (money > 150000) rank = "🏆 전설의 스마트팜 마스터";
@@ -605,9 +637,15 @@
                 isGameOver = true; isPlaying = false;
                 clearInterval(gameTimerInterval); clearTimeout(eventTimerInterval);
                 
+                // ★ 파산할 때까지 버틴 시간 계산
+                let playedTime = initialTimeSetting - Math.max(0, timeLeft);
+                let pMins = Math.floor(playedTime / 60);
+                let pSecs = playedTime % 60;
+                
                 ui.receiptLight.innerText = `${Math.floor(lightCost).toLocaleString()}원`;
                 ui.receiptCo2.innerText = `${Math.floor(co2Cost).toLocaleString()}원`;
                 ui.receiptTemp.innerText = `${Math.floor(tempCost).toLocaleString()}원`;
+                document.getElementById('receipt-playtime').innerText = `${pMins}분 ${pSecs}초`;
                 
                 let biggestReason = "냉난방비";
                 if (lightCost > tempCost && lightCost > co2Cost) biggestReason = "조명 전기세";
