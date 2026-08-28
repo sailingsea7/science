@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>스마트팜 광합성 시뮬레이션</title>
+    <title>스마트팜 10분 타임어택</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body {
@@ -17,7 +17,7 @@
             appearance: slider-vertical;
             -webkit-appearance: slider-vertical;
             width: 24px;
-            height: 90px; /* 공간 확보를 위해 살짝 더 줄임 */
+            height: 90px;
             cursor: pointer;
             accent-color: #059669;
         }
@@ -31,7 +31,7 @@
             90% { transform: translateY(0); opacity: 1; }
             100% { transform: translateY(-20px); opacity: 0; }
         }
-        .toast { animation: popup 3s forwards; }
+        .toast { animation: popup 3.5s forwards; }
 
         @keyframes blink {
             0%, 100% { opacity: 1; }
@@ -41,112 +41,103 @@
         
         .btn-adjust { transition: all 0.1s; }
         .btn-adjust:active { transform: scale(0.9); background-color: #cbd5e1; }
-
-        .crop-card { transition: all 0.2s; }
-        .crop-card:active { transform: scale(0.95); }
         
-        /* 영수증 톱니바퀴 디자인 */
+        .crop-tab.active {
+            background-color: #10b981; color: white; border-color: #059669; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
         .receipt-edge {
             background-image: radial-gradient(circle at 10px 0, transparent 10px, white 11px);
-            background-size: 20px 20px;
-            background-position: -10px 100%;
-            background-repeat: repeat-x;
-            height: 10px;
+            background-size: 20px 20px; background-position: -10px 100%; background-repeat: repeat-x; height: 10px;
         }
     </style>
 </head>
-<body class="flex flex-col min-h-screen max-w-lg mx-auto w-full relative">
+<body class="flex flex-col min-h-screen p-2 md:p-4 max-w-lg mx-auto w-full relative">
 
-    <!-- ==========================================
-         화면 1: 시작 화면 (로비 및 작물 선택)
-    =========================================== -->
     <div id="intro-screen" class="absolute inset-0 z-50 bg-emerald-50 flex flex-col p-4 overflow-y-auto">
         <div class="text-center mt-6 mb-8">
-            <h1 class="text-3xl font-black text-emerald-800 mb-2">👨‍🌾 스마트팜 CEO</h1>
+            <h1 class="text-3xl font-black text-emerald-800 mb-2">👨‍🌾 스마트팜 타임어택</h1>
             <p class="text-sm text-emerald-700 font-medium bg-emerald-100 py-2 rounded-lg inline-block px-4">
-                전기세와 가스비를 아끼며 최고의 수익을 내세요!
+                제한시간 10분! 돌발 날씨를 이겨내고 부자가 되세요!
             </p>
         </div>
 
         <h2 class="text-lg font-bold text-gray-800 mb-3 px-2">🌱 재배할 작물을 선택하세요</h2>
         
         <div class="flex flex-col gap-4">
-            <!-- 상추 -->
-            <button onclick="startGame('lettuce')" class="crop-card bg-white p-4 rounded-2xl shadow-md border-2 border-emerald-100 text-left flex items-center gap-4">
+            <button onclick="startGame('lettuce')" class="bg-white p-4 rounded-2xl shadow-md border-2 border-emerald-100 text-left flex items-center gap-4 transition-transform active:scale-95">
                 <div class="text-5xl bg-emerald-50 p-2 rounded-xl">🥬</div>
                 <div>
                     <h3 class="text-lg font-black text-emerald-700 mb-1">상추 <span class="text-[10px] bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-bold">저온/반음지</span></h3>
-                    <p class="text-xs text-gray-600 leading-relaxed">서늘한 곳(20°C)을 좋아해 냉난방비가 적게 듭니다. 유지비가 저렴하지만 수익도 낮습니다.</p>
+                    <p class="text-xs text-gray-600 leading-relaxed">서늘한 곳(20°C)을 좋아합니다. 돌발 폭염에 쥐약입니다!</p>
                 </div>
             </button>
 
-            <!-- 토마토 -->
-            <button onclick="startGame('tomato')" class="crop-card bg-white p-4 rounded-2xl shadow-md border-2 border-emerald-100 text-left flex items-center gap-4">
+            <button onclick="startGame('tomato')" class="bg-white p-4 rounded-2xl shadow-md border-2 border-emerald-100 text-left flex items-center gap-4 transition-transform active:scale-95">
                 <div class="text-5xl bg-red-50 p-2 rounded-xl">🍅</div>
                 <div>
                     <h3 class="text-lg font-black text-red-600 mb-1">방울토마토 <span class="text-[10px] bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full font-bold">표준형</span></h3>
-                    <p class="text-xs text-gray-600 leading-relaxed">따뜻한 온도(30°C)와 충분한 빛, 이산화탄소가 필요합니다. 가장 밸런스가 좋은 작물입니다.</p>
+                    <p class="text-xs text-gray-600 leading-relaxed">따뜻한 온도(30°C)와 충분한 빛, 이산화탄소가 필요합니다.</p>
                 </div>
             </button>
 
-            <!-- 용과 -->
-            <button onclick="startGame('cactus')" class="crop-card bg-white p-4 rounded-2xl shadow-md border-2 border-emerald-100 text-left flex items-center gap-4">
+            <button onclick="startGame('cactus')" class="bg-white p-4 rounded-2xl shadow-md border-2 border-emerald-100 text-left flex items-center gap-4 transition-transform active:scale-95">
                 <div class="text-5xl bg-pink-50 p-2 rounded-xl">🌵</div>
                 <div>
                     <h3 class="text-lg font-black text-pink-600 mb-1">용과 <span class="text-[10px] bg-red-100 text-red-700 px-2 py-0.5 rounded-full font-bold">고온/양지</span></h3>
-                    <p class="text-xs text-gray-600 leading-relaxed">아주 뜨거운 온도(40°C)와 엄청난 빛을 쐬어야 합니다. 전기세가 폭발하지만 고수익을 줍니다!</p>
+                    <p class="text-xs text-gray-600 leading-relaxed">아주 뜨거운 온도(40°C)와 엄청난 빛이 필요합니다. 고위험 고수익!</p>
                 </div>
             </button>
         </div>
         
-        <div class="mt-auto pt-8 pb-4 text-center text-xs text-gray-400 font-medium">
-            💡 힌트: 무작정 기계를 세게 틀면 '전기세 폭탄'을 맞아 파산합니다!
+        <div class="mt-auto pt-8 pb-4 text-center text-xs text-rose-500 font-bold">
+            🚨 경고: 게임 중 무작위로 날씨가 변합니다. 방심하지 마세요!
         </div>
     </div>
 
-
-    <!-- ==========================================
-         화면 2: 메인 시뮬레이션 화면
-    =========================================== -->
-    <div id="simulation-screen" class="hidden flex-col h-screen w-full p-2 md:p-4 pb-0">
+    <div id="simulation-screen" class="hidden flex-col h-screen w-full pb-0">
         
-        <!-- 상단 헤더 & 대시보드 -->
         <header class="mb-2 flex-shrink-0">
             <div class="flex justify-between items-center mb-2 px-1">
-                <button onclick="showIntroScreen()" class="bg-white border border-gray-300 text-gray-700 px-3 py-1 rounded-lg text-xs font-bold shadow-sm active:bg-gray-100">
-                    ⬅️ 작물 변경
-                </button>
-                <div class="text-sm font-bold text-emerald-800 bg-emerald-100 px-3 py-1 rounded-full flex items-center gap-1 shadow-sm">
-                    현재 작물: <span id="current-crop-name" class="font-black text-emerald-900">토마토</span>
+                <div class="flex items-center gap-2">
+                    <button onclick="showIntroScreen()" class="bg-white border border-gray-300 text-gray-700 px-2 py-1 rounded-lg text-xs font-bold shadow-sm active:bg-gray-100">
+                        ⬅️ 작물변경
+                    </button>
+                    <!-- ★ 10분 타이머 UI -->
+                    <div class="bg-indigo-100 text-indigo-800 px-3 py-1 rounded-full font-black text-sm flex items-center shadow-sm border border-indigo-200">
+                        ⏳ <span id="timer-display" class="ml-1">10:00</span>
+                    </div>
+                </div>
+                
+                <div class="text-xs font-bold text-emerald-800 bg-emerald-100 px-3 py-1.5 rounded-full flex items-center gap-1 shadow-sm">
+                    작물: <span id="current-crop-name" class="font-black text-emerald-900">토마토</span>
                 </div>
             </div>
             
-            <div class="flex justify-between items-center gap-2">
-                <div class="bg-white px-3 py-2 rounded-xl shadow border border-emerald-200 flex-1 text-center">
+            <div class="flex justify-between items-center gap-1">
+                <div class="bg-white px-2 py-1.5 rounded-xl shadow border border-emerald-200 flex-1 text-center">
                     <div class="text-[10px] text-gray-500 font-bold mb-0.5">💰 남은 자본금</div>
-                    <div class="text-base font-black text-emerald-600 truncate" id="money-display">10,000원</div>
+                    <div class="text-sm font-black text-emerald-600 truncate" id="money-display">10,000원</div>
                 </div>
-                 <div class="bg-white px-3 py-2 rounded-xl shadow border border-rose-200 text-center relative overflow-hidden min-w-[90px]">
+                 <div class="bg-white px-2 py-1.5 rounded-xl shadow border border-rose-200 text-center relative overflow-hidden min-w-[80px]">
                     <div class="text-[10px] text-gray-500 font-bold mb-0.5">💸 총 지출/초</div>
                     <div class="text-sm font-bold text-rose-500 truncate" id="cost-display">-0원</div>
                 </div>
-                 <div class="bg-white px-3 py-2 rounded-xl shadow border border-blue-200 flex-1 text-center">
+                 <div class="bg-white px-2 py-1.5 rounded-xl shadow border border-blue-200 flex-1 text-center">
                     <div class="text-[10px] text-gray-500 font-bold mb-0.5">📦 수확 박스</div>
-                    <div class="text-base font-black text-blue-600" id="harvest-display">0박스</div>
+                    <div class="text-sm font-black text-blue-600" id="harvest-display">0박스</div>
                 </div>
             </div>
         </header>
-        
+
         <main class="w-full bg-white rounded-2xl shadow-xl overflow-hidden flex flex-col flex-1 border border-gray-100 relative mb-2">
             
-            <div id="toast-container" class="absolute top-2 left-1/2 transform -translate-x-1/2 z-50 flex flex-col gap-1 w-11/12 max-w-sm"></div>
+            <div id="toast-container" class="absolute top-2 left-1/2 transform -translate-x-1/2 z-50 flex flex-col gap-1 w-11/12 max-w-sm pointer-events-none"></div>
 
-            <!-- ★ NEW: 파산 영수증 오버레이 -->
+            <!-- 파산 영수증 -->
             <div id="game-over" class="absolute inset-0 bg-black/80 z-40 hidden flex-col items-center justify-center backdrop-blur-sm p-4">
-                
                 <div class="bg-white w-full max-w-xs rounded-t-xl pt-6 px-6 pb-2 text-center text-gray-800 shadow-2xl relative">
                     <h2 class="text-2xl font-black text-gray-800 border-b-2 border-dashed border-gray-300 pb-4 mb-4">영수증 (파산)</h2>
-                    
                     <div class="text-left text-sm mb-4 space-y-2 font-medium">
                         <div class="flex justify-between items-center text-rose-600">
                             <span>💡 조명 전기세</span> <span id="receipt-light" class="font-bold">0원</span>
@@ -157,29 +148,41 @@
                         <div class="flex justify-between items-center text-rose-600 border-b border-gray-200 pb-2">
                             <span>🔥 냉난방비</span> <span id="receipt-temp" class="font-bold">0원</span>
                         </div>
-                        <div class="flex justify-between items-center text-lg font-black text-rose-600 pt-1">
-                            <span>초당 총 지출</span> <span id="receipt-total">0원</span>
-                        </div>
                     </div>
-                    
                     <div class="bg-gray-100 p-3 rounded-lg text-xs text-left leading-relaxed text-gray-700">
                         <p class="font-bold text-rose-500 mb-1">🚨 파산 사유 분석</p>
                         <p id="game-over-reason">작물의 특성을 파악해 조절해 보세요!</p>
                     </div>
                 </div>
-                <!-- 영수증 아래쪽 톱니모양 장식 -->
                 <div class="receipt-edge w-full max-w-xs bg-white mb-6"></div>
-
-                <button onclick="showIntroScreen()" class="bg-emerald-500 text-white font-black py-3 px-8 rounded-full shadow-lg active:scale-95 transition-transform">
-                    농장 다시 운영하기
-                </button>
+                <button onclick="showIntroScreen()" class="bg-emerald-500 text-white font-black py-3 px-8 rounded-full shadow-lg active:scale-95 transition-transform">다시 도전하기</button>
             </div>
 
-            <!-- 시뮬레이션 화면 -->
+            <!-- ★ 10분 종료 최종 결과 화면 -->
+            <div id="final-result-screen" class="absolute inset-0 bg-indigo-900/90 z-40 hidden flex-col items-center justify-center backdrop-blur-md p-4 text-white">
+                <h2 class="text-4xl font-black text-yellow-300 mb-2">⏰ 영업 종료</h2>
+                <p class="text-indigo-200 mb-6">10분 동안의 농장 경영 결과입니다.</p>
+                
+                <div class="bg-white/10 p-6 rounded-2xl border border-white/20 mb-8 w-full max-w-xs">
+                    <div class="text-center mb-4 border-b border-white/20 pb-4">
+                        <p class="text-sm text-indigo-300 font-bold mb-1">최종 자산</p>
+                        <p id="final-money" class="text-3xl font-black text-emerald-400">0원</p>
+                    </div>
+                    <div class="flex justify-between items-center text-sm font-medium">
+                        <span class="text-indigo-200">총 수확량</span>
+                        <span id="final-harvest" class="font-bold text-xl text-white">0박스</span>
+                    </div>
+                    <div class="mt-4 pt-4 border-t border-white/20 text-center">
+                        <p class="text-sm text-indigo-300 font-bold mb-1">경영 평가</p>
+                        <p id="final-rank" class="text-xl font-black text-yellow-400">평가 중...</p>
+                    </div>
+                </div>
+                <button onclick="showIntroScreen()" class="bg-white text-indigo-900 font-black py-3 px-10 rounded-full shadow-lg hover:bg-indigo-50 active:scale-95 transition-transform">새 게임 시작</button>
+            </div>
+
             <div class="relative w-full flex-1 min-h-[140px] bg-sky-100" id="canvas-container">
                 <div class="absolute inset-0 bg-white/20 backdrop-blur-[1px] pointer-events-none" style="background-image: linear-gradient(90deg, transparent 95%, rgba(255,255,255,0.5) 100%); background-size: 50px 100%;"></div>
                 <div id="light-overlay" class="absolute inset-0 bg-black pointer-events-none transition-opacity duration-100" style="opacity: 0.5;"></div>
-                
                 <canvas id="simulationCanvas" class="absolute inset-0 w-full h-full"></canvas>
                 
                 <button id="harvest-btn" class="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-yellow-400 hover:bg-yellow-500 text-yellow-900 font-black py-3 px-8 rounded-full shadow-xl border-2 border-white opacity-0 pointer-events-none transition-all duration-300 scale-90 text-sm whitespace-nowrap z-30">
@@ -187,11 +190,10 @@
                 </button>
             </div>
 
-            <!-- 상태 표시 바 -->
             <div class="bg-slate-50 px-4 py-2 border-y border-slate-200 flex flex-col gap-2">
                 <div>
                     <div class="flex justify-between items-center mb-0.5">
-                        <p class="text-[10px] font-bold text-blue-700">⚡ 실시간 광합성량 (수익 창출 속도)</p>
+                        <p class="text-[10px] font-bold text-blue-700">⚡ 실시간 광합성량 (현재 효율)</p>
                         <span id="rate-percent" class="text-xs font-black text-blue-600">0%</span>
                     </div>
                     <div class="w-full bg-slate-200 rounded-full h-1.5 overflow-hidden relative shadow-inner">
@@ -213,19 +215,15 @@
                 </div>
             </div>
 
-            <!-- 제어판 (버튼 + 세로 슬라이더 + 항목별 요금) -->
             <div class="w-full bg-white p-2 pb-3 flex-shrink-0">
                 <div class="flex justify-around items-end pt-2 h-auto">
                     
-                    <!-- 빛 조절 -->
+                    <!-- 빛 -->
                     <div class="flex flex-col items-center relative w-1/3 border-r border-gray-100">
-                        <div id="light-warning" class="absolute -top-3 bg-rose-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded hidden warning-text whitespace-nowrap z-10">광포화점!</div>
-                        
-                        <!-- ★ 항목별 세부 요금 -->
+                        <div id="light-warning" class="absolute -top-3 bg-rose-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded hidden warning-text whitespace-nowrap z-10">광포화점 초과!</div>
                         <div id="cost-light" class="text-[9px] font-bold text-gray-500 mb-1 bg-gray-50 px-2 py-0.5 rounded-full border border-gray-100 transition-colors">
                             전기세: <span id="val-cost-light">0</span>원
                         </div>
-
                         <div class="bg-slate-100 w-[85%] py-1 rounded-md text-center mb-1 shadow-inner">
                             <span id="light-val" class="text-amber-500 font-bold text-sm">40</span>
                         </div>
@@ -237,14 +235,12 @@
                         </label>
                     </div>
 
-                    <!-- 이산화탄소 조절 -->
+                    <!-- CO2 -->
                     <div class="flex flex-col items-center relative w-1/3 border-r border-gray-100">
-                        <div id="co2-warning" class="absolute -top-3 bg-emerald-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded hidden warning-text whitespace-nowrap z-10">포화 상태!</div>
-                        
+                        <div id="co2-warning" class="absolute -top-3 bg-emerald-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded hidden warning-text whitespace-nowrap z-10">가스 낭비 중!</div>
                         <div id="cost-co2" class="text-[9px] font-bold text-gray-500 mb-1 bg-gray-50 px-2 py-0.5 rounded-full border border-gray-100 transition-colors">
                             가스비: <span id="val-cost-co2">0</span>원
                         </div>
-
                         <div class="bg-slate-100 w-[85%] py-1 rounded-md text-center mb-1 shadow-inner">
                             <span id="co2-val" class="text-emerald-600 font-bold text-sm">40</span>
                         </div>
@@ -256,14 +252,12 @@
                         </label>
                     </div>
 
-                    <!-- 온도 조절 -->
+                    <!-- 온도 -->
                     <div class="flex flex-col items-center relative w-1/3">
                         <div id="temp-warning" class="absolute -top-3 bg-red-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded hidden warning-text whitespace-nowrap z-10">광합성 급감!</div>
-                        
                         <div id="cost-temp" class="text-[9px] font-bold text-gray-500 mb-1 bg-gray-50 px-2 py-0.5 rounded-full border border-gray-100 transition-colors">
                             냉난방: <span id="val-cost-temp">0</span>원
                         </div>
-
                         <div class="bg-slate-100 w-[85%] py-1 rounded-md text-center mb-1 shadow-inner flex items-center justify-center">
                             <span id="temp-val" class="text-orange-500 font-bold text-sm">15</span><span class="text-orange-500 text-[9px] ml-0.5">°C</span>
                         </div>
@@ -298,21 +292,19 @@
             efficiencyBadge: document.getElementById('efficiency-badge'), overlay: document.getElementById('light-overlay'),
             harvestBtn: document.getElementById('harvest-btn'), gameOver: document.getElementById('game-over'),
             cropName: document.getElementById('current-crop-name'), gameOverReason: document.getElementById('game-over-reason'),
-            
-            // 항목별 비용 UI
             costLightBox: document.getElementById('cost-light'), valCostLight: document.getElementById('val-cost-light'),
             costCo2Box: document.getElementById('cost-co2'), valCostCo2: document.getElementById('val-cost-co2'),
             costTempBox: document.getElementById('cost-temp'), valCostTemp: document.getElementById('val-cost-temp'),
-            
-            // 영수증 UI
             receiptLight: document.getElementById('receipt-light'), receiptCo2: document.getElementById('receipt-co2'),
-            receiptTemp: document.getElementById('receipt-temp'), receiptTotal: document.getElementById('receipt-total')
+            receiptTemp: document.getElementById('receipt-temp'), receiptTotal: document.getElementById('receipt-total'),
+            timerDisplay: document.getElementById('timer-display'), finalResultScreen: document.getElementById('final-result-screen'),
+            finalMoney: document.getElementById('final-money'), finalHarvest: document.getElementById('final-harvest'), finalRank: document.getElementById('final-rank')
         };
 
         const CROP_DATA = {
             'lettuce': {
                 name: '🥬 상추', limitLight: 50, limitCo2: 60, optTemp: 20, reward: 4000,
-                hint: "상추는 고온에서 망가집니다! 냉난방 온도를 20도 근처로 맞추세요."
+                hint: "상추는 고온(20도 초과)에서 잎이 타버립니다. 저온을 유지하세요!"
             },
             'tomato': {
                 name: '🍅 방울토마토', limitLight: 80, limitCo2: 80, optTemp: 30, reward: 8000,
@@ -320,7 +312,7 @@
             },
             'cactus': {
                 name: '🌵 용과', limitLight: 120, limitCo2: 90, optTemp: 40, reward: 16000,   
-                hint: "용과는 사막 출신이라 엄청난 난방(40도)과 전기(120)가 필요합니다."
+                hint: "용과는 사막 출신이라 엄청난 난방(40도)과 빛(120)이 필요합니다."
             }
         };
 
@@ -334,6 +326,12 @@
         
         let isReadyToHarvest = false;
         let isGameOver = true; 
+        let isPlaying = false;
+        
+        // 시간 관련 변수
+        let timeLeft = 600; // 10분 = 600초
+        let gameTimerInterval;
+        let eventTimerInterval;
         let animationId;
         let canvasWidth, canvasHeight;
         let particles = [];
@@ -341,32 +339,103 @@
         window.startGame = function(cropId) {
             currentCropId = cropId; activeCrop = CROP_DATA[cropId];
             
-            money = 10000; harvestCount = 0; plantGrowth = 0;
-            isReadyToHarvest = false; isGameOver = false;
+            money = 10000; harvestCount = 0; plantGrowth = 0; timeLeft = 600;
+            isReadyToHarvest = false; isGameOver = false; isPlaying = true;
             
             ui.light.value = 40; ui.co2.value = 40; ui.temp.value = 25;
             
             ui.cropName.innerText = activeCrop.name;
             ui.harvestBtn.style.opacity = '0'; ui.harvestBtn.style.pointerEvents = 'none';
             ui.gameOver.style.display = 'none';
+            ui.finalResultScreen.style.display = 'none';
             ui.harvest.innerText = `0박스`;
+            updateTimerUI();
 
             introScreen.classList.add('hidden');
             simulationScreen.classList.remove('hidden');
             simulationScreen.classList.add('flex');
             
             resizeCanvas(); 
-            showToast(`${activeCrop.name} 재배 시작! 목표 온도를 잘 맞추세요.`, 'info');
+            showToast(`${activeCrop.name} 재배 시작! 제한시간 10분입니다.`, 'info');
             
+            // 타이머 시작 (1초마다)
+            if(gameTimerInterval) clearInterval(gameTimerInterval);
+            gameTimerInterval = setInterval(handleTimeTick, 1000);
+            
+            // 랜덤 이벤트 시작
+            scheduleNextEvent();
+
             lastTime = performance.now();
             if (!animationId) requestAnimationFrame(updateSimulation);
         }
 
         window.showIntroScreen = function() {
-            isGameOver = true; 
+            isGameOver = true; isPlaying = false;
+            clearInterval(gameTimerInterval); clearTimeout(eventTimerInterval);
             simulationScreen.classList.add('hidden');
             simulationScreen.classList.remove('flex');
             introScreen.classList.remove('hidden');
+        }
+
+        function handleTimeTick() {
+            if(!isPlaying || isGameOver) return;
+            timeLeft--;
+            updateTimerUI();
+            
+            if(timeLeft <= 0) {
+                endGameWithResult();
+            }
+        }
+
+        function updateTimerUI() {
+            let m = Math.floor(timeLeft / 60);
+            let s = timeLeft % 60;
+            ui.timerDisplay.innerText = `${m}:${s < 10 ? '0'+s : s}`;
+            if(timeLeft <= 60) ui.timerDisplay.parentElement.className = "bg-rose-100 text-rose-800 px-3 py-1 rounded-full font-black text-sm flex items-center shadow-sm border border-rose-300 warning-text";
+            else ui.timerDisplay.parentElement.className = "bg-indigo-100 text-indigo-800 px-3 py-1 rounded-full font-black text-sm flex items-center shadow-sm border border-indigo-200";
+        }
+
+        // ★ 랜덤 이벤트 (돌발 변수) 함수
+        function scheduleNextEvent() {
+            if(!isPlaying || isGameOver) return;
+            // 15초 ~ 25초 사이 랜덤 발생
+            const nextTime = Math.floor(Math.random() * 10000) + 15000;
+            eventTimerInterval = setTimeout(() => {
+                triggerRandomEvent();
+                scheduleNextEvent();
+            }, nextTime);
+        }
+
+        function triggerRandomEvent() {
+            if(!isPlaying || isGameOver) return;
+            const events = [
+                { msg: "☁️ 갑작스러운 먹구름! 빛이 줄어듭니다.", type: 'warning', action: () => { adjustValue('light', -30); } },
+                { msg: "☀️ 햇빛 쨍쨍! 자연광이 강해집니다.", type: 'success', action: () => { adjustValue('light', +30); } },
+                { msg: "🔥 폭염 주의보! 온실 온도가 급상승합니다.", type: 'error', action: () => { adjustValue('temp', +15); } },
+                { msg: "❄️ 한랭 전선 통과! 온도가 뚝 떨어집니다.", type: 'error', action: () => { adjustValue('temp', -15); } },
+                { msg: "💨 환기구 고장! 이산화탄소가 빠져나갑니다.", type: 'warning', action: () => { adjustValue('co2', -30); } }
+            ];
+            
+            const randEvent = events[Math.floor(Math.random() * events.length)];
+            randEvent.action();
+            showToast(`[돌발변수] ${randEvent.msg}`, randEvent.type);
+        }
+
+        function endGameWithResult() {
+            isGameOver = true; isPlaying = false;
+            clearInterval(gameTimerInterval); clearTimeout(eventTimerInterval);
+            
+            ui.finalMoney.innerText = `${Math.floor(money).toLocaleString()}원`;
+            ui.finalHarvest.innerText = `${harvestCount}박스`;
+            
+            let rank = "";
+            if (money > 150000) rank = "🏆 전설의 스마트팜 마스터";
+            else if (money > 80000) rank = "🥇 훌륭한 청년 농부";
+            else if (money > 30000) rank = "🥈 평범한 농장주";
+            else rank = "🥉 초보 농부 (유지비 관리가 필요해요!)";
+            
+            ui.finalRank.innerText = rank;
+            ui.finalResultScreen.style.display = 'flex';
         }
 
         window.adjustValue = function(id, delta) {
@@ -379,11 +448,11 @@
 
         function showToast(message, type = 'info') {
             const toast = document.createElement('div');
-            let bgColor = type === 'error' ? 'bg-rose-500' : (type === 'success' ? 'bg-emerald-500' : 'bg-blue-500');
-            toast.className = `toast ${bgColor} text-white px-3 py-2 rounded-lg shadow-lg text-[11px] font-bold flex items-center justify-center z-50 relative`;
+            let bgColor = type === 'error' ? 'bg-rose-500' : (type === 'success' ? 'bg-emerald-500' : 'bg-amber-500');
+            toast.className = `toast ${bgColor} text-white px-3 py-2 rounded-lg shadow-lg text-xs font-bold flex items-center justify-center z-50 relative pointer-events-none`;
             toast.innerHTML = message;
             document.getElementById('toast-container').appendChild(toast);
-            setTimeout(() => toast.remove(), 3000);
+            setTimeout(() => toast.remove(), 3500);
         }
 
         function resizeCanvas() {
@@ -468,7 +537,6 @@
                 }
             }
         }
-
         function drawSoil() { ctx.fillStyle = `#8B4513`; ctx.fillRect(0, canvasHeight - 20, canvasWidth, 20); }
 
         ui.harvestBtn.addEventListener('click', () => {
@@ -485,7 +553,7 @@
         let lastTime = performance.now();
 
         function updateSimulation(time) {
-            if (isGameOver) { lastTime = time; animationId = requestAnimationFrame(updateSimulation); return; }
+            if (!isPlaying) { lastTime = time; animationId = requestAnimationFrame(updateSimulation); return; }
             const deltaTime = (time - lastTime) / 1000;
             lastTime = time;
 
@@ -497,23 +565,20 @@
 
             const LIM_L = activeCrop.limitLight; const LIM_C = activeCrop.limitCo2; const OPT_T = activeCrop.optTemp;
 
-            // ★ 항목별 비용 계산 (누진세 적용)
-            let lightCost = light * 1.5; 
-            let isLightHigh = false;
+            // 비용 계산 (누진세)
+            let lightCost = light * 1.5; let isLightHigh = false;
             if (light > LIM_L) { lightCost += Math.pow((light - LIM_L), 1.8); isLightHigh = true; }
             
-            let co2Cost = co2 * 1.5; 
-            let isCo2High = false;
+            let co2Cost = co2 * 1.5; let isCo2High = false;
             if (co2 > LIM_C) { co2Cost += (co2 - LIM_C) * 2; isCo2High = true; }
             
-            let tempCost = temp * 2.5; 
-            let isTempHigh = false;
+            let tempCost = temp * 2.5; let isTempHigh = false;
             if (temp > OPT_T) { tempCost += Math.pow((temp - OPT_T), 2.2); isTempHigh = true; }
 
             const totalCostPerSec = lightCost + co2Cost + tempCost;
             money -= totalCostPerSec * deltaTime;
 
-            // UI 텍스트 색상 및 글씨 갱신
+            // UI 갱신
             ui.valCostLight.innerText = Math.floor(lightCost);
             ui.costLightBox.className = isLightHigh ? "text-[9px] font-bold mb-1 px-2 py-0.5 rounded-full border border-rose-200 bg-rose-100 text-rose-600 transition-colors" : "text-[9px] font-bold text-gray-500 mb-1 bg-gray-50 px-2 py-0.5 rounded-full border border-gray-100 transition-colors";
             ui.light.className = isLightHigh ? 'danger' : '';
@@ -529,34 +594,31 @@
             ui.temp.className = isTempHigh ? 'danger' : '';
             ui.tempWarn.style.display = isTempHigh ? 'block' : 'none';
 
-            // 메인 대시보드 요금 갱신
             ui.money.innerText = `${Math.floor(money).toLocaleString()}원`;
             ui.cost.innerText = `-${Math.floor(totalCostPerSec).toLocaleString()}원`;
             
-            if (money < 0) ui.money.className = "text-base font-black text-rose-600 truncate";
-            else ui.money.className = "text-base font-black text-emerald-600 truncate";
+            if (money < 0) ui.money.className = "text-sm font-black text-rose-600 truncate";
+            else ui.money.className = "text-sm font-black text-emerald-600 truncate";
 
-            // ★ 파산 처리 및 영수증 출력
+            // 파산 처리
             if (money <= 0) {
-                isGameOver = true;
+                isGameOver = true; isPlaying = false;
+                clearInterval(gameTimerInterval); clearTimeout(eventTimerInterval);
                 
-                // 파산 영수증 데이터 넣기
                 ui.receiptLight.innerText = `${Math.floor(lightCost).toLocaleString()}원`;
                 ui.receiptCo2.innerText = `${Math.floor(co2Cost).toLocaleString()}원`;
                 ui.receiptTemp.innerText = `${Math.floor(tempCost).toLocaleString()}원`;
-                ui.receiptTotal.innerText = `${Math.floor(totalCostPerSec).toLocaleString()}원`;
                 
-                // 가장 큰 비용을 찾아서 파산 이유 설명
                 let biggestReason = "냉난방비";
                 if (lightCost > tempCost && lightCost > co2Cost) biggestReason = "조명 전기세";
                 else if (co2Cost > tempCost && co2Cost > lightCost) biggestReason = "이산화탄소 가스비";
                 
-                ui.gameOverReason.innerHTML = `광합성은 한계가 있는데 무작정 수치를 올려서 <b>${biggestReason} 누진세 폭탄</b>을 맞았습니다!<br><br>👉 ${activeCrop.hint}`;
-                
+                ui.gameOverReason.innerHTML = `광합성 한계를 무시하여 <b>${biggestReason} 누진세 폭탄</b>을 맞았습니다!<br><br>👉 ${activeCrop.hint}`;
                 ui.gameOver.style.display = 'flex';
                 return;
             }
 
+            // 효율성 계산
             const effLight = Math.min(light, LIM_L) / LIM_L; 
             const effCo2 = Math.min(co2, LIM_C) / LIM_C;       
             let effTemp = temp <= OPT_T ? temp / OPT_T : Math.max(0, 1 - ((temp - OPT_T) / 10)); 
